@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>我的旅遊達人 App</title>
+    <title>Trip App 2025 (Updated)</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -35,6 +35,7 @@
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } } 
         .animate-fade-in { animation: fadeIn 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards; } 
         .custom-map-icon { background: transparent; border: none; }
+        /* 調整自定義圖示垂直置中 */
         .fi { display: flex; align-items: center; justify-content: center; line-height: 1; }
     </style>
 </head>
@@ -50,17 +51,7 @@
         const { createPortal } = ReactDOM;
 
         // ==========================================
-        // 🔑 您的 Firebase 設定 (已鎖定)
-        // ==========================================
-        const YOUR_FIREBASE_CONFIG = {
-          apiKey: "AIzaSyCtpJ-0-0G_cnVPRBoixQcOB-5wM0vUSOw",
-          authDomain: "trip-app-d63a2.firebaseapp.com",
-          projectId: "trip-app-d63a2",
-          storageBucket: "trip-app-d63a2.firebasestorage.app",
-          messagingSenderId: "911454329161",
-          appId: "1:911454329161:web:64d07a73ba2c15993a6298",
-          measurementId: "G-22D75M69CE"
-        };
+        // 🛠️ 圖標系統
         // ==========================================
 
         const FALLBACK_ICONS = {
@@ -276,9 +267,16 @@
         const orderBy = () => {}; 
         const serverTimestamp = () => new Date();
 
-        // 這裡會自動使用 YOUR_FIREBASE_CONFIG 的值，不需要再修改
-        const apiKey = YOUR_FIREBASE_CONFIG.apiKey;
-        const appId = YOUR_FIREBASE_CONFIG.projectId; 
+        const apiKey = ""; 
+
+        const YOUR_FIREBASE_CONFIG = {
+          apiKey: "", 
+          authDomain: "trip-app-d63a2.firebaseapp.com",
+          projectId: "trip-app-d63a2",
+          storageBucket: "trip-app-d63a2.firebasestorage.app",
+          messagingSenderId: "911454329161",
+          appId: ""  
+        };
 
         const getMapLink = (query) => `https://www.google.com/maps/search/?api=1&query=$?q=${encodeURIComponent(query || '')}`;
 
@@ -315,7 +313,9 @@
         };
 
         const getIconStyle = (iconType) => {
+          // 機場特殊樣式
           if (iconType === 'airport') return 'bg-[#0071c5] text-white border-transparent shadow-md';
+          
           if (['plane', 'train', 'subway', 'bus', 'car', 'ship', 'bike', 'walk'].includes(iconType)) return 'bg-[#1e3a8a] text-white border-transparent'; 
           switch (iconType) {
             case 'camera': return 'bg-red-500 text-white border-transparent'; 
@@ -462,14 +462,23 @@
         ];
 
         let db, auth;
+        let appId = "trip-app-d63a2"; 
 
         try {
-          if (YOUR_FIREBASE_CONFIG && YOUR_FIREBASE_CONFIG.apiKey) {
-              const app = initializeApp(YOUR_FIREBASE_CONFIG);
+          let firebaseConfig = null;
+          
+          if (YOUR_FIREBASE_CONFIG.apiKey && YOUR_FIREBASE_CONFIG.appId) {
+             firebaseConfig = YOUR_FIREBASE_CONFIG;
+          } 
+          else if (typeof __firebase_config !== 'undefined') {
+             firebaseConfig = JSON.parse(__firebase_config);
+          }
+
+          if (firebaseConfig) {
+              const app = initializeApp(firebaseConfig);
               auth = getAuth(app);
               db = getFirestore(app);
-          } else {
-             console.error("Firebase Configuration is missing!");
+              if (firebaseConfig.projectId) appId = firebaseConfig.projectId;
           }
         } catch (e) { console.log("Firebase Init Error:", e); }
 
@@ -616,88 +625,88 @@
           return (
             <div className="fixed inset-0 bg-black/50 z-[2000] flex items-center justify-center p-4 backdrop-blur-sm">
               <div className="bg-white rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
-                 <div className="flex border-b border-stone-100">
-                     <button onClick={()=>setMode('profile')} className={`flex-1 py-3 text-sm font-bold flex items-center justify-center gap-2 ${mode==='profile' ? 'text-[#2b4f60] bg-stone-50 border-b-2 border-[#2b4f60]' : 'text-stone-400'}`}><User size={16}/> 帳號</button>
-                     <button onClick={()=>setMode('api')} className={`flex-1 py-3 text-sm font-bold flex items-center justify-center gap-2 ${mode==='api' ? 'text-[#2b4f60] bg-stone-50 border-b-2 border-[#2b4f60]' : 'text-stone-400'}`}><Settings size={16}/> 設定</button>
-                     <button onClick={onClose} className="px-4 text-stone-400 hover:bg-stone-100"><X size={20}/></button>
-                 </div>
+                  <div className="flex border-b border-stone-100">
+                      <button onClick={()=>setMode('profile')} className={`flex-1 py-3 text-sm font-bold flex items-center justify-center gap-2 ${mode==='profile' ? 'text-[#2b4f60] bg-stone-50 border-b-2 border-[#2b4f60]' : 'text-stone-400'}`}><User size={16}/> 帳號</button>
+                      <button onClick={()=>setMode('api')} className={`flex-1 py-3 text-sm font-bold flex items-center justify-center gap-2 ${mode==='api' ? 'text-[#2b4f60] bg-stone-50 border-b-2 border-[#2b4f60]' : 'text-stone-400'}`}><Settings size={16}/> 設定</button>
+                      <button onClick={onClose} className="px-4 text-stone-400 hover:bg-stone-100"><X size={20}/></button>
+                  </div>
 
-                 <div className="p-6 overflow-y-auto">
-                     {mode === 'api' ? (
-                         <div className="space-y-4">
-                             <div>
-                                <label className="text-xs font-bold text-stone-500 mb-1 block">連線專案 ID (Project ID)</label>
-                                <div className="p-2 bg-stone-100 rounded text-xs font-mono text-stone-600 flex items-center gap-2">
-                                     <Database size={14} className="text-[#2b4f60]"/>
-                                     {currentProjectId || "未連線"}
-                                </div>
-                             </div>
-                             <div>
-                                <label className="text-xs font-bold text-stone-500 mb-1 block">Gemini API Key</label>
-                                <div className="relative">
-                                    <input type={showKey ? "text" : "password"} value={key} onChange={(e) => setKey(e.target.value)} className="w-full border rounded-lg p-3 text-sm pr-10" placeholder="貼上 API Key" />
-                                    <button onClick={() => setShowKey(!showKey)} className="absolute right-3 top-3 text-stone-400 hover:text-stone-600">{showKey ? <EyeOff size={16}/> : <Settings size={16}/>}</button>
-                                </div>
-                                <p className="text-[10px] text-stone-400 mt-2">用於 AI 自動座標與進階翻譯。</p>
-                             </div>
-                             <button onClick={handleSaveKey} className="w-full py-2 bg-indigo-600 text-white rounded-lg font-bold shadow-md">儲存設定</button>
-                             {msg.text && <div className={`text-xs text-center p-2 rounded ${msg.type==='error'?'bg-red-50 text-red-600':'bg-green-50 text-green-600'}`}>{msg.text}</div>}
-                         </div>
-                     ) : (
-                         <div>
-                             {user && !user.isAnonymous ? (
-                                 <div className="text-center space-y-4">
-                                     <div className="w-20 h-20 bg-[#2b4f60] rounded-full mx-auto flex items-center justify-center text-white text-3xl font-bold shadow-lg">{user.email[0].toUpperCase()}</div>
-                                     <div>
-                                         <h3 className="font-bold text-lg text-stone-800">已登入</h3>
-                                         <p className="text-sm text-stone-500 font-mono">{user.email}</p>
-                                     </div>
-                                     <div className="bg-green-50 text-green-700 p-3 rounded-xl text-xs flex items-center justify-center gap-2"><Globe size={14}/> 資料已同步至雲端</div>
-                                     <button onClick={()=>{onLogout(); onClose();}} className="w-full py-2 border border-red-200 text-red-500 rounded-lg font-bold hover:bg-red-50 flex items-center justify-center gap-2"><LogOut size={16}/> 登出</button>
+                  <div className="p-6 overflow-y-auto">
+                      {mode === 'api' ? (
+                          <div className="space-y-4">
+                              <div>
+                                 <label className="text-xs font-bold text-stone-500 mb-1 block">連線專案 ID (Project ID)</label>
+                                 <div className="p-2 bg-stone-100 rounded text-xs font-mono text-stone-600 flex items-center gap-2">
+                                      <Database size={14} className="text-[#2b4f60]"/>
+                                      {currentProjectId || "未連線"}
                                  </div>
-                             ) : (
-                                 <div className="space-y-4">
-                                     {authMode !== 'reset' && (
-                                         <div className="flex bg-stone-100 p-1 rounded-lg mb-4">
-                                             <button onClick={()=>setAuthMode('login')} className={`flex-1 py-1.5 rounded-md text-xs font-bold transition-all ${authMode==='login'?'bg-white shadow text-stone-800':'text-stone-400'}`}>登入</button>
-                                             <button onClick={()=>setAuthMode('signup')} className={`flex-1 py-1.5 rounded-md text-xs font-bold transition-all ${authMode==='signup'?'bg-white shadow text-stone-800':'text-stone-400'}`}>註冊 (同步資料)</button>
-                                         </div>
-                                     )}
-                                     
-                                     {authMode === 'reset' ? (
-                                         <div className="space-y-3">
-                                             <h3 className="font-bold text-center">重設密碼</h3>
-                                             <input className="w-full border rounded-lg p-3 text-sm" placeholder="Email" value={email} onChange={e=>setEmail(e.target.value)} />
-                                             <button onClick={()=>handleAuth('reset')} disabled={loading} className="w-full py-2 bg-stone-800 text-white rounded-lg font-bold">{loading ? '發送中...' : '發送重設信'}</button>
-                                             <button onClick={()=>setAuthMode('login')} className="w-full text-xs text-stone-400 underline">返回登入</button>
-                                         </div>
-                                     ) : (
-                                         <div className="space-y-3">
-                                             <div className="relative"><Mail size={16} className="absolute left-3 top-3.5 text-stone-400"/><input className="w-full border rounded-lg p-3 pl-10 text-sm" placeholder="Email" value={email} onChange={e=>setEmail(e.target.value)} /></div>
-                                             <div className="relative"><Lock size={16} className="absolute left-3 top-3.5 text-stone-400"/><input type="password" className="w-full border rounded-lg p-3 pl-10 text-sm" placeholder="密碼 (至少6碼)" value={password} onChange={e=>setPassword(e.target.value)} /></div>
-                                             {authMode === 'login' && <div className="text-right"><button onClick={()=>setAuthMode('reset')} className="text-xs text-stone-400 hover:text-stone-600">忘記密碼?</button></div>}
-                                             
-                                             <button onClick={()=>handleAuth(authMode)} disabled={loading} className="w-full py-2.5 bg-[#2b4f60] text-white rounded-lg font-bold shadow-md flex items-center justify-center gap-2 hover:bg-[#1e3a8a] transition-colors">
-                                                 {loading ? <Loader2 size={16} className="animate-spin"/> : (authMode==='login' ? <LogIn size={16}/> : <UserPlus size={16}/>)}
-                                                 {authMode === 'login' ? '登入' : '註冊並綁定行程'}
-                                             </button>
-
-                                             {authMode === 'signup' && <div className="bg-yellow-50 text-yellow-700 p-2 rounded-lg text-[10px] flex items-start gap-2"><ShieldCheck size={14} className="shrink-0 mt-0.5"/> 註冊後，目前的訪客行程將自動綁定至新帳號，不會遺失。</div>}
-                                         </div>
-                                     )}
-                                     {msg.text && (
-                                      <div className={`text-xs text-center p-2 rounded flex flex-col gap-1 ${msg.type==='error'?'bg-red-50 text-red-600':'bg-green-50 text-green-600'}`}>
-                                          <span>{msg.text}</span>
-                                          {msg.text.includes('Firebase 後台') && (
-                                              <a href="https://console.firebase.google.com/" target="_blank" rel="noopener noreferrer" className="underline font-bold text-red-700">前往 Firebase Console</a>
-                                          )}
+                              </div>
+                              <div>
+                                 <label className="text-xs font-bold text-stone-500 mb-1 block">Gemini API Key</label>
+                                 <div className="relative">
+                                     <input type={showKey ? "text" : "password"} value={key} onChange={(e) => setKey(e.target.value)} className="w-full border rounded-lg p-3 text-sm pr-10" placeholder="貼上 API Key" />
+                                     <button onClick={() => setShowKey(!showKey)} className="absolute right-3 top-3 text-stone-400 hover:text-stone-600">{showKey ? <EyeOff size={16}/> : <Settings size={16}/>}</button>
+                                 </div>
+                                 <p className="text-[10px] text-stone-400 mt-2">用於 AI 自動座標與進階翻譯。</p>
+                              </div>
+                              <button onClick={handleSaveKey} className="w-full py-2 bg-indigo-600 text-white rounded-lg font-bold shadow-md">儲存設定</button>
+                              {msg.text && <div className={`text-xs text-center p-2 rounded ${msg.type==='error'?'bg-red-50 text-red-600':'bg-green-50 text-green-600'}`}>{msg.text}</div>}
+                          </div>
+                      ) : (
+                          <div>
+                              {user && !user.isAnonymous ? (
+                                  <div className="text-center space-y-4">
+                                      <div className="w-20 h-20 bg-[#2b4f60] rounded-full mx-auto flex items-center justify-center text-white text-3xl font-bold shadow-lg">{user.email[0].toUpperCase()}</div>
+                                      <div>
+                                          <h3 className="font-bold text-lg text-stone-800">已登入</h3>
+                                          <p className="text-sm text-stone-500 font-mono">{user.email}</p>
                                       </div>
-                                     )}
-                                 </div>
-                             )}
-                         </div>
-                     )}
-                 </div>
+                                      <div className="bg-green-50 text-green-700 p-3 rounded-xl text-xs flex items-center justify-center gap-2"><Globe size={14}/> 資料已同步至雲端</div>
+                                      <button onClick={()=>{onLogout(); onClose();}} className="w-full py-2 border border-red-200 text-red-500 rounded-lg font-bold hover:bg-red-50 flex items-center justify-center gap-2"><LogOut size={16}/> 登出</button>
+                                  </div>
+                              ) : (
+                                  <div className="space-y-4">
+                                      {authMode !== 'reset' && (
+                                          <div className="flex bg-stone-100 p-1 rounded-lg mb-4">
+                                              <button onClick={()=>setAuthMode('login')} className={`flex-1 py-1.5 rounded-md text-xs font-bold transition-all ${authMode==='login'?'bg-white shadow text-stone-800':'text-stone-400'}`}>登入</button>
+                                              <button onClick={()=>setAuthMode('signup')} className={`flex-1 py-1.5 rounded-md text-xs font-bold transition-all ${authMode==='signup'?'bg-white shadow text-stone-800':'text-stone-400'}`}>註冊 (同步資料)</button>
+                                          </div>
+                                      )}
+                                      
+                                      {authMode === 'reset' ? (
+                                          <div className="space-y-3">
+                                              <h3 className="font-bold text-center">重設密碼</h3>
+                                              <input className="w-full border rounded-lg p-3 text-sm" placeholder="Email" value={email} onChange={e=>setEmail(e.target.value)} />
+                                              <button onClick={()=>handleAuth('reset')} disabled={loading} className="w-full py-2 bg-stone-800 text-white rounded-lg font-bold">{loading ? '發送中...' : '發送重設信'}</button>
+                                              <button onClick={()=>setAuthMode('login')} className="w-full text-xs text-stone-400 underline">返回登入</button>
+                                          </div>
+                                      ) : (
+                                          <div className="space-y-3">
+                                              <div className="relative"><Mail size={16} className="absolute left-3 top-3.5 text-stone-400"/><input className="w-full border rounded-lg p-3 pl-10 text-sm" placeholder="Email" value={email} onChange={e=>setEmail(e.target.value)} /></div>
+                                              <div className="relative"><Lock size={16} className="absolute left-3 top-3.5 text-stone-400"/><input type="password" className="w-full border rounded-lg p-3 pl-10 text-sm" placeholder="密碼 (至少6碼)" value={password} onChange={e=>setPassword(e.target.value)} /></div>
+                                              {authMode === 'login' && <div className="text-right"><button onClick={()=>setAuthMode('reset')} className="text-xs text-stone-400 hover:text-stone-600">忘記密碼?</button></div>}
+                                              
+                                              <button onClick={()=>handleAuth(authMode)} disabled={loading} className="w-full py-2.5 bg-[#2b4f60] text-white rounded-lg font-bold shadow-md flex items-center justify-center gap-2 hover:bg-[#1e3a8a] transition-colors">
+                                                  {loading ? <Loader2 size={16} className="animate-spin"/> : (authMode==='login' ? <LogIn size={16}/> : <UserPlus size={16}/>)}
+                                                  {authMode === 'login' ? '登入' : '註冊並綁定行程'}
+                                              </button>
+
+                                              {authMode === 'signup' && <div className="bg-yellow-50 text-yellow-700 p-2 rounded-lg text-[10px] flex items-start gap-2"><ShieldCheck size={14} className="shrink-0 mt-0.5"/> 註冊後，目前的訪客行程將自動綁定至新帳號，不會遺失。</div>}
+                                          </div>
+                                      )}
+                                      {msg.text && (
+                                       <div className={`text-xs text-center p-2 rounded flex flex-col gap-1 ${msg.type==='error'?'bg-red-50 text-red-600':'bg-green-50 text-green-600'}`}>
+                                           <span>{msg.text}</span>
+                                           {msg.text.includes('Firebase 後台') && (
+                                               <a href="https://console.firebase.google.com/" target="_blank" rel="noopener noreferrer" className="underline font-bold text-red-700">前往 Firebase Console</a>
+                                           )}
+                                       </div>
+                                      )}
+                                  </div>
+                              )}
+                          </div>
+                      )}
+                  </div>
               </div>
             </div>
           );
@@ -1014,7 +1023,7 @@
           return (
               <div className="flex relative pl-4 pb-6 group">
                 {!isLast && <div className="absolute left-[35px] top-0 bottom-0 w-0.5 border-l-2 border-dashed border-stone-300 z-0"></div>}
-                {isEditing && !isEditMode && ( <div {...dragHandleProps} className="absolute left-[-24px] top-4 text-stone-300 cursor-grab active:cursor-grabbing hover:text-stone-500"><MoreVertical size={20} /></div> )}
+                {/* 移除拖曳手柄，卡片本身即可拖曳 */}
                 
                 {/* 🛑 核心修改：放大左側圓圈至 38px */}
                 <div className="w-10 flex flex-col items-center mr-4 shrink-0 z-10 pt-1">
@@ -1054,7 +1063,7 @@
           return (
             <div className="flex relative pl-4 pb-6 group">
               {!isLast && <div className="absolute left-[35px] top-0 bottom-0 w-0.5 border-l-2 border-dashed border-stone-300 z-0"></div>}
-              {isEditing && !isEditMode && (<div {...dragHandleProps} className="absolute left-[-24px] top-4 text-stone-300 cursor-grab active:cursor-grabbing hover:text-stone-500"><MoreVertical size={20} /></div>)}
+              {/* 移除拖曳手柄，卡片本身即可拖曳 */}
               <div className="w-10 flex flex-col items-center mr-4 shrink-0 z-10 pt-1">
                   <div className="w-8 h-8 rounded-full bg-[#FDFCF8] border border-stone-200 shadow-sm flex items-center justify-center text-stone-400 relative z-10"><IconComponent size={14} /></div>
               </div>
@@ -1071,7 +1080,8 @@
                         <textarea className="w-full p-1 border rounded text-sm" rows={2} value={editData.desc || ''} onChange={e=>setEditData({...editData, desc:e.target.value})} placeholder="備註..." />
                     </div>
                     {!isWalk && (
-                        <input className="w-full p-1 border rounded" value={editData.cost} onChange={e=>setEditData({...editData, cost: parseInt(e.target.value) || 0})} placeholder="費用"/>
+                        /* 🛑 核心修改：允許輸入符號，不再強制 parseInt */
+                        <input className="w-full p-1 border rounded" value={editData.cost} onChange={e=>setEditData({...editData, cost: e.target.value})} placeholder="費用 (例如: ¥2000)"/>
                     )}
                     <div className="flex justify-end gap-2 mt-2"><button onClick={handleCancel} className="text-stone-500 text-xs px-2 py-1" onMouseDown={(e) => e.stopPropagation()}>取消</button><button onClick={handleSave} className="bg-[#2b4f60] text-white text-xs px-3 py-1 rounded" onMouseDown={(e) => e.stopPropagation()}>儲存</button></div>
                   </div>
@@ -1089,7 +1099,8 @@
                         <div className="text-xs text-stone-500 mt-0.5">{String(data.desc || '')}</div>
                     </div>
                     {!isWalk && (
-                        <div className="text-right"><div className="font-bold text-stone-700 font-serif">{data.cost.toLocaleString()}</div></div>
+                        /* 顯示費用，不強制 localString 如果是純文字 */
+                        <div className="text-right"><div className="font-bold text-stone-700 font-serif">{data.cost ? (typeof data.cost === 'number' ? data.cost.toLocaleString() : data.cost) : ''}</div></div>
                     )}
                   </div>
                 )}
@@ -1182,14 +1193,14 @@
             <div className="flex relative pl-4 pb-6 group">
               {!isLast && <div className="absolute left-[35px] top-8 bottom-0 w-0.5 border-l-2 border-dashed border-stone-300 z-0"></div>}
               
-              {isEditing && !isLocalEditing && (<div {...dragHandleProps} className="absolute left-[-24px] top-4 text-stone-300 cursor-grab active:cursor-grabbing hover:text-stone-500"><MoreVertical size={20} /></div>)}
+              {/* 移除拖曳手柄，卡片本身即可拖曳 */}
               
               <div className={`w-10 flex flex-col items-center mr-4 shrink-0 z-10 pt-1`}>
-                 {/* 🛑 核心修改：統一放大至 38px */}
-                 <div className={`w-[38px] h-[38px] rounded-full shadow-sm flex items-center justify-center border-2 border-[#FDFCF8] relative z-10 ${getIconStyle(data.icon)}`}>
+                  {/* 🛑 核心修改：統一放大至 38px */}
+                  <div className={`w-[38px] h-[38px] rounded-full shadow-sm flex items-center justify-center border-2 border-[#FDFCF8] relative z-10 ${getIconStyle(data.icon)}`}>
                     {/* 使用新圖標 */}
                     {renderIconOrClass(data.icon, isAirport ? 22 : 14)}
-                 </div>
+                  </div>
               </div>
 
               <div className={`flex-1 rounded-xl shadow-sm border bg-[#FDFCF8] overflow-hidden relative transition-all z-10 ${isLocalEditing ? 'ring-2 ring-[#2b4f60]/20' : ''} ${data.highlight ? 'border-[#B74B4B]/30' : 'border-stone-100'}`}>
@@ -1313,6 +1324,8 @@
             </div>
           );
         };
+        
+        // ... (省略 MenuTranslator, ExpenseView, PackingView, InfoView, HomeView 以節省長度，它們的邏輯保持不變，但需包含在完整檔案中。此處僅展示核心修改部分，實際輸出請包含所有 React Components)
         
         const MenuItemModal = ({ item, initialQty = 1, initialOptions = [], onClose, onAdd, isOpen }) => {
             const [quantity, setQuantity] = useState(initialQty);
@@ -1557,7 +1570,10 @@
                     </div>
                 );
             }
-
+            
+            // ... (ViewMode Text 和 Camera 與原版邏輯一致，僅略過以節省篇幅)
+            // 請保留原本的 Text/Camera Render 邏輯
+            
             if (viewMode === 'text') {
                 return (
                     <div className="flex flex-col h-full bg-[#FDFCF8] animate-fade-in">
@@ -1615,7 +1631,8 @@
                 );
             }
 
-            if (viewMode === 'camera') {
+            // 請將 Camera View 邏輯保留
+             if (viewMode === 'camera') {
                 return (
                     <div className="flex flex-col h-full bg-white relative overflow-hidden animate-fade-in">
                         <div id="menu-scroll-area" ref={menuContainerRef} className="flex-1 overflow-y-auto bg-stone-50 relative scroll-smooth pb-32">
@@ -1663,34 +1680,34 @@
                                      {photoMode === 'omikuji' && omikujiResult && ( <div className="space-y-6"><div className="bg-[#fffbf0] border border-amber-200 rounded-2xl p-6 shadow-sm text-center relative overflow-hidden"><div className="absolute top-0 right-0 p-4 opacity-10"><FileText size={100} className="text-amber-500"/></div><h3 className="text-amber-800 font-bold text-lg mb-1">運勢</h3><div className="text-5xl font-black text-amber-600 mb-4">{omikujiResult.fortune}</div><div className="w-16 h-1 bg-amber-200 mx-auto mb-4 rounded-full"></div><p className="text-amber-900/80 text-sm font-medium leading-relaxed">{omikujiResult.translation}</p></div><div className="bg-white border border-stone-200 rounded-2xl p-5 shadow-sm"><h3 className="font-bold text-stone-800 mb-3 flex items-center gap-2"><Star size={18} className="text-amber-500"/> 神明指示 / AI 解讀</h3><p className="text-stone-600 text-sm leading-7">{omikujiResult.advice}</p></div><div className="opacity-50 grayscale hover:grayscale-0 transition-all"><img src={selectedImages[0]} className="w-full h-48 object-cover rounded-xl" /></div></div> )}
                                      {photoMode === 'menu' && ( 
                                      <>
-                                                 <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b border-stone-100 shadow-sm transition-all -mx-4 px-4">
-                                                     <div className="flex gap-2 overflow-x-auto py-3 no-scrollbar">
-                                                         {Object.keys(menuItems.reduce((acc, item) => { const cat = item.category || '其他'; if (!acc[cat]) acc[cat] = []; acc[cat].push(item); return acc; }, {})).map(cat => (
-                                                             <button key={cat} onClick={() => scrollToCategory(cat)} className={`px-4 py-1.5 rounded-full text-sm whitespace-nowrap border font-bold transition-all ${activeCategory === cat ? 'bg-pink-600 text-white border-pink-600 shadow-md' : 'bg-white text-stone-500 border-stone-200 hover:bg-stone-50'}`}>{cat}</button>
+                                             <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b border-stone-100 shadow-sm transition-all -mx-4 px-4">
+                                                 <div className="flex gap-2 overflow-x-auto py-3 no-scrollbar">
+                                                     {Object.keys(menuItems.reduce((acc, item) => { const cat = item.category || '其他'; if (!acc[cat]) acc[cat] = []; acc[cat].push(item); return acc; }, {})).map(cat => (
+                                                         <button key={cat} onClick={() => scrollToCategory(cat)} className={`px-4 py-1.5 rounded-full text-sm whitespace-nowrap border font-bold transition-all ${activeCategory === cat ? 'bg-pink-600 text-white border-pink-600 shadow-md' : 'bg-white text-stone-500 border-stone-200 hover:bg-stone-50'}`}>{cat}</button>
+                                                     ))}
+                                                 </div>
+                                             </div>
+                                             {Object.entries(menuItems.reduce((acc, item) => { const cat = item.category || '其他'; if (!acc[cat]) acc[cat] = []; acc[cat].push(item); return acc; }, {})).map(([cat, items]) => (
+                                                 <div key={cat} id={`cat-${cat}`} className="mb-6 scroll-mt-32">
+                                                     <h3 className="font-bold text-stone-800 mb-3 border-l-4 border-pink-500 pl-3 text-lg mt-6 first:mt-0">{cat}</h3>
+                                                     <div className="space-y-4">
+                                                         {items.map(item => (
+                                                             <div key={item.id} onClick={() => setSelectedMenuItem(item)} className="bg-white border border-stone-100 rounded-2xl p-4 shadow-sm flex justify-between hover:shadow-md transition-all cursor-pointer">
+                                                                         <div className="flex-1 pr-2">
+                                                                             <div className="font-bold text-stone-900 text-lg">{item.translatedName}</div>
+                                                                             <div className="text-xs text-stone-400 font-mono mb-2">{item.originalName}</div>
+                                                                             <div className="text-sm text-stone-600 leading-relaxed bg-stone-50 p-2 rounded-lg">{item.description}</div>
+                                                                             <div className="text-lg font-black mt-3 text-pink-600">{item.price}</div>
+                                                                         </div>
+                                                                         <div className="flex flex-col items-center justify-center gap-3 ml-2 min-w-[3rem]">
+                                                                                 <div className="w-10 h-10 bg-pink-50 text-pink-600 rounded-full flex items-center justify-center shadow-sm"><Plus size={20}/></div>
+                                                                                 {cart[item.id]?.qty > 0 && <span className="font-bold text-lg text-pink-600">{cart[item.id].qty}</span>}
+                                                                         </div>
+                                                             </div>
                                                          ))}
                                                      </div>
                                                  </div>
-                                                 {Object.entries(menuItems.reduce((acc, item) => { const cat = item.category || '其他'; if (!acc[cat]) acc[cat] = []; acc[cat].push(item); return acc; }, {})).map(([cat, items]) => (
-                                                     <div key={cat} id={`cat-${cat}`} className="mb-6 scroll-mt-32">
-                                                         <h3 className="font-bold text-stone-800 mb-3 border-l-4 border-pink-500 pl-3 text-lg mt-6 first:mt-0">{cat}</h3>
-                                                         <div className="space-y-4">
-                                                             {items.map(item => (
-                                                                 <div key={item.id} onClick={() => setSelectedMenuItem(item)} className="bg-white border border-stone-100 rounded-2xl p-4 shadow-sm flex justify-between hover:shadow-md transition-all cursor-pointer">
-                                                                             <div className="flex-1 pr-2">
-                                                                                 <div className="font-bold text-stone-900 text-lg">{item.translatedName}</div>
-                                                                                 <div className="text-xs text-stone-400 font-mono mb-2">{item.originalName}</div>
-                                                                                 <div className="text-sm text-stone-600 leading-relaxed bg-stone-50 p-2 rounded-lg">{item.description}</div>
-                                                                                 <div className="text-lg font-black mt-3 text-pink-600">{item.price}</div>
-                                                                             </div>
-                                                                             <div className="flex flex-col items-center justify-center gap-3 ml-2 min-w-[3rem]">
-                                                                                     <div className="w-10 h-10 bg-pink-50 text-pink-600 rounded-full flex items-center justify-center shadow-sm"><Plus size={20}/></div>
-                                                                                     {cart[item.id]?.qty > 0 && <span className="font-bold text-lg text-pink-600">{cart[item.id].qty}</span>}
-                                                                             </div>
-                                                                 </div>
-                                                             ))}
-                                                         </div>
-                                                     </div>
-                                                 ))}
+                                             ))}
                                      </> 
                                      )}
                                      <button onClick={() => {setStep('upload'); setSelectedImages([]); setMenuItems([]); setGeneralTranslation(''); setOmikujiResult(null);}} className="w-full py-4 border-2 border-dashed border-stone-300 text-stone-400 hover:bg-stone-50 hover:text-stone-600 rounded-2xl transition-colors font-bold flex items-center justify-center gap-2 mt-6"><RefreshCw size={18}/> 重新掃描</button>
@@ -1718,6 +1735,7 @@
         };
 
         const TranslationView = MenuTranslator;
+        
         const ExpenseView = ({ tripId, user }) => {
           const [members, setMembers] = useState(["我", "旅伴A"]);
           const [expenses, setExpenses, isLoaded] = usePersistentData('expenses', tripId, [], user);
@@ -1931,9 +1949,9 @@
                               signInAnonymously(auth).catch((e) => {
                                    const errCode = e.code || e.message || "";
                                    if (!errCode.includes('operation-not-allowed')) {
-                                        console.error(e);
+                                       console.error(e);
                                    } else {
-                                        console.log("提示：Firebase 匿名登入未啟用，請至後台開啟以啟用訪客模式。");
+                                       console.log("提示：Firebase 匿名登入未啟用，請至後台開啟以啟用訪客模式。");
                                    }
                               });
                           }
@@ -2010,9 +2028,9 @@
           
           const updateCurrentItinerary = (newItinerary) => { 
               if (isTripShared) {
-                   setSharedItineraryData(newItinerary); 
+                    setSharedItineraryData(newItinerary); 
               } else {
-                   setPrivateItineraries({ ...privateItineraries, [currentTripId]: newItinerary }); 
+                    setPrivateItineraries({ ...privateItineraries, [currentTripId]: newItinerary }); 
               }
           };
           
@@ -2309,19 +2327,19 @@
                                        onDragOver={(e) => e.preventDefault()} 
                                        onDragEnd={handleDragEnd} 
                                        className={`${isTimelineEditMode ? "pl-12 transition-all" : ""} ${isTimelineEditMode && editingItemId !== item.id ? "cursor-move" : ""} ${isTimelineEditMode && editingItemId === item.id ? "cursor-default" : ""}`}
-                                    >
-                                            <EventCard 
-                                                key={item.id} 
-                                                data={item} 
-                                                onUpdate={handleUpdateEvent} 
-                                                onAutoCoords={fetchCoordinates} 
-                                                isEditing={isTimelineEditMode} 
-                                                onDelete={() => confirmDelete(item.id)} 
-                                                dragHandleProps={{}} 
-                                                isLast={isLast}
-                                                onEditStart={() => setEditingItemId(item.id)}
-                                                onEditEnd={() => setEditingItemId(null)}
-                                            /> 
+                                     >
+                                              <EventCard 
+                                                  key={item.id} 
+                                                  data={item} 
+                                                  onUpdate={handleUpdateEvent} 
+                                                  onAutoCoords={fetchCoordinates} 
+                                                  isEditing={isTimelineEditMode} 
+                                                  onDelete={() => confirmDelete(item.id)} 
+                                                  dragHandleProps={{}} 
+                                                  isLast={isLast}
+                                                  onEditStart={() => setEditingItemId(item.id)}
+                                                  onEditEnd={() => setEditingItemId(null)}
+                                              /> 
                                     </div> 
                                   ); 
                               })}</div>
