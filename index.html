@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Trip App 2025 (Updated)</title>
+    <title>Trip App 2025 (Actions)</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -35,7 +35,6 @@
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } } 
         .animate-fade-in { animation: fadeIn 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards; } 
         .custom-map-icon { background: transparent; border: none; }
-        /* 調整自定義圖示垂直置中 */
         .fi { display: flex; align-items: center; justify-content: center; line-height: 1; }
     </style>
 </head>
@@ -53,7 +52,6 @@
         // ==========================================
         // 🛠️ 圖標系統
         // ==========================================
-
         const FALLBACK_ICONS = {
             Pencil: [['path', { d: "M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" }]],
             Plus: [['path', { d: "M5 12h14" }], ['path', { d: "M12 5v14" }]],
@@ -64,12 +62,11 @@
             Check: [['path', { d: "M20 6 9 17l-5-5" }]],
             X: [['path', { d: "M18 6 6 18" }], ['path', { d: "m6 6 12 12" }]],
             ChevronDown: [['path', { d: "m6 9 6 6 6-6" }]],
+            ChevronUp: [['path', { d: "m18 15-6-6-6 6" }]],
             ChevronRight: [['path', { d: "m9 18 6-6-6-6" }]],
             ArrowLeft: [['path', { d: "m12 19-7-7 7-7" }], ['path', { d: "M19 12H5" }]],
-            ArrowRight: [['path', { d: "M5 12h14" }], ['path', { d: "m12 5 7 7-7 7" }]],
             Settings: [['path', { d: "M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.72v-.51a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" }], ['circle', { cx: "12", cy: "12", r: "3" }]],
             Search: [['circle', { cx: "11", cy: "11", r: "8" }], ['path', { d: "m21 21-4.3-4.3" }]],
-            Home: [['path', { d: "m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" }], ['polyline', { points: "9 22 9 12 15 12 15 22" }]],
             User: [['path', { d: "M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" }], ['circle', { cx: "12", cy: "7", r: "4" }]],
             Star: [['polygon', { points: "12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" }]],
             Camera: [['path', { d: "M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z" }], ['circle', { cx: "12", cy: "13", r: "3" }]],
@@ -91,8 +88,6 @@
             Navigation: [['polygon', { points: "3 11 22 2 13 21 11 13 3 11" }]],
             Share2: [['circle', { cx: "18", cy: "5", r: "3" }], ['circle', { cx: "6", cy: "12", r: "3" }], ['circle', { cx: "18", cy: "19", r: "3" }], ['line', { x1: "8.59", x2: "15.42", y1: "13.51", y2: "17.49" }], ['line', { x1: "15.41", x2: "8.59", y1: "6.51", y2: "10.49" }]],
             Users: [['path', { d: "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" }], ['circle', { cx: "9", cy: "7", r: "4" }], ['path', { d: "M22 21v-2a4 4 0 0 0-3-3.87" }], ['path', { d: "M16 3.13a4 4 0 0 1 0 7.75" }]],
-            LogOut: [['path', { d: "M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" }], ['polyline', { points: "16 17 21 12 16 7" }], ['line', { x1: "21", x2: "9", y1: "12", y2: "12" }]],
-            Database: [['ellipse', { cx: "12", cy: "5", rx: "9", ry: "3" }], ['path', { d: "M21 12c0 1.66-4 3-9 3s-9-1.34-9-3" }], ['path', { d: "M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" }]],
             EyeOff: [['path', { d: "M9.88 9.88a3 3 0 1 0 4.24 4.24" }], ['path', { d: "M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" }], ['path', { d: "M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61" }], ['line', { x1: "2", x2: "22", y1: "2", y2: "22" }]],
             MessageSquare: [['path', { d: "M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" }]],
             Upload: [['path', { d: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" }], ['polyline', { points: "17 8 12 3 7 8" }], ['line', { x1: "12", x2: "12", y1: "3", y2: "15" }]],
@@ -144,8 +139,6 @@
             Luggage: [['path', { d: "M6 20h0a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h0" }], ['path', { d: "M8 18V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v14" }], ['path', { d: "M10 20h4" }], ['circle', { cx: "16", cy: "20", r: "2" }], ['circle', { cx: "8", cy: "20", r: "2" }]],
             Volume2: [['polygon', { points: "11 5 6 9 2 9 2 15 6 15 11 19 11 5" }], ['path', { d: "M19.07 4.93a10 10 0 0 1 0 14.14" }], ['path', { d: "M15.54 8.46a5 5 0 0 1 0 7.07" }]],
             MicOff: [['line', { x1: "1", x2: "23", y1: "1", y2: "23" }], ['path', { d: "M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6" }], ['path', { d: "M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23" }], ['line', { x1: "12", x2: "12", y1: "19", y2: "22" }]],
-            MoveUp: [['path', { d: "M8 6L12 2L16 6" }], ['path', { d: "M12 2V22" }]],
-            MoveDown: [['path', { d: "M8 18L12 22L16 18" }], ['path', { d: "M12 2V22" }]]
         };
 
         const LucideIcons = new Proxy({}, {
@@ -218,7 +211,7 @@
             Link: LinkIcon, Upload, Image: ImgIcon, Clock, User, LogOut, UserPlus, LogIn, Lock, ShieldCheck, Mail, Database
         } = LucideIcons;
 
-        // 🛑 核心修改：渲染 Lucide Icon 或 自定義 Class Icon (fi-rr-plane-alt) 
+        // 🛑 渲染 Lucide Icon 或 自定義 Class Icon (fi-rr-plane-alt) 
         const renderIconOrClass = (iconName, size, className = "") => {
             if (iconName === 'plane' || iconName === 'airport') {
                 return <i className={`fi fi-rr-plane-alt ${className}`} style={{ fontSize: size, display: 'flex', alignItems: 'center', justifyContent: 'center' }}></i>;
@@ -313,9 +306,7 @@
         };
 
         const getIconStyle = (iconType) => {
-          // 機場特殊樣式
           if (iconType === 'airport') return 'bg-[#0071c5] text-white border-transparent shadow-md';
-          
           if (['plane', 'train', 'subway', 'bus', 'car', 'ship', 'bike', 'walk'].includes(iconType)) return 'bg-[#1e3a8a] text-white border-transparent'; 
           switch (iconType) {
             case 'camera': return 'bg-red-500 text-white border-transparent'; 
@@ -580,132 +571,43 @@
           );
         };
 
-        const GlobalSettings = ({ isOpen, onClose, user, onLogin, onSignup, onLogout, onResetPassword, currentProjectId }) => {
+        const GlobalSettings = ({ isOpen, onClose, user, currentProjectId }) => {
           const [key, setKey] = useState(localStorage.getItem('gemini_api_key') || '');
           const [showKey, setShowKey] = useState(false);
-          const [mode, setMode] = useState('profile'); 
-          const [authMode, setAuthMode] = useState('login'); 
-          const [email, setEmail] = useState('');
-          const [password, setPassword] = useState('');
-          const [loading, setLoading] = useState(false);
           const [msg, setMsg] = useState({ type: '', text: '' });
 
           const handleSaveKey = () => { localStorage.setItem('gemini_api_key', key); setMsg({type:'success', text:'API Key 已儲存'}); setTimeout(()=>setMsg({type:'',text:''}), 2000); };
           
-          const getErrorMessage = (errorMsg) => {
-            const code = String(errorMsg);
-            if (code.includes('operation-not-allowed')) return '請至 Firebase 後台啟用「Email/密碼」登入功能';
-            if (code.includes('email-already-in-use')) return '此 Email 已被註冊';
-            if (code.includes('invalid-email')) return 'Email 格式不正確';
-            if (code.includes('weak-password')) return '密碼強度不足 (至少 6 位)';
-            if (code.includes('user-not-found') || code.includes('wrong-password') || code.includes('invalid-credential')) return '帳號或密碼錯誤';
-            if (code.includes('too-many-requests')) return '嘗試次數過多，請稍後再試';
-            if (code.includes('requires-recent-login')) return '操作逾時，請重新登入再試';
-            return '發生錯誤: ' + code.replace('Firebase:', '').replace('auth/', '');
-          };
-
-          const handleAuth = async (action) => {
-              setLoading(true); setMsg({type:'', text:''});
-              try {
-                  if(action === 'login') await onLogin(email, password);
-                  if(action === 'signup') await onSignup(email, password);
-                  if(action === 'reset') { await onResetPassword(email); setMsg({type:'success', text:'重設信已寄出'}); }
-                  if(action !== 'reset') onClose();
-              } catch(e) {
-                  const errCode = e.code || e.message || String(e);
-                  if (!errCode.includes('operation-not-allowed')) {
-                      console.error("Auth Error:", e);
-                  }
-                  setMsg({type:'error', text: getErrorMessage(e.message)});
-              } finally { setLoading(false); }
-          };
-
           if (!isOpen) return null;
 
           return (
             <div className="fixed inset-0 bg-black/50 z-[2000] flex items-center justify-center p-4 backdrop-blur-sm">
               <div className="bg-white rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
-                  <div className="flex border-b border-stone-100">
-                      <button onClick={()=>setMode('profile')} className={`flex-1 py-3 text-sm font-bold flex items-center justify-center gap-2 ${mode==='profile' ? 'text-[#2b4f60] bg-stone-50 border-b-2 border-[#2b4f60]' : 'text-stone-400'}`}><User size={16}/> 帳號</button>
-                      <button onClick={()=>setMode('api')} className={`flex-1 py-3 text-sm font-bold flex items-center justify-center gap-2 ${mode==='api' ? 'text-[#2b4f60] bg-stone-50 border-b-2 border-[#2b4f60]' : 'text-stone-400'}`}><Settings size={16}/> 設定</button>
-                      <button onClick={onClose} className="px-4 text-stone-400 hover:bg-stone-100"><X size={20}/></button>
+                  <div className="flex border-b border-stone-100 p-4 justify-between items-center">
+                      <h3 className="font-bold text-lg text-stone-800 flex items-center gap-2"><Settings size={18}/> 設定</h3>
+                      <button onClick={onClose} className="p-1 text-stone-400 hover:bg-stone-100 rounded-full"><X size={20}/></button>
                   </div>
-
-                  <div className="p-6 overflow-y-auto">
-                      {mode === 'api' ? (
-                          <div className="space-y-4">
-                              <div>
-                                 <label className="text-xs font-bold text-stone-500 mb-1 block">連線專案 ID (Project ID)</label>
-                                 <div className="p-2 bg-stone-100 rounded text-xs font-mono text-stone-600 flex items-center gap-2">
-                                      <Database size={14} className="text-[#2b4f60]"/>
-                                      {currentProjectId || "未連線"}
-                                 </div>
-                              </div>
-                              <div>
-                                 <label className="text-xs font-bold text-stone-500 mb-1 block">Gemini API Key</label>
-                                 <div className="relative">
-                                     <input type={showKey ? "text" : "password"} value={key} onChange={(e) => setKey(e.target.value)} className="w-full border rounded-lg p-3 text-sm pr-10" placeholder="貼上 API Key" />
-                                     <button onClick={() => setShowKey(!showKey)} className="absolute right-3 top-3 text-stone-400 hover:text-stone-600">{showKey ? <EyeOff size={16}/> : <Settings size={16}/>}</button>
-                                 </div>
-                                 <p className="text-[10px] text-stone-400 mt-2">用於 AI 自動座標與進階翻譯。</p>
-                              </div>
-                              <button onClick={handleSaveKey} className="w-full py-2 bg-indigo-600 text-white rounded-lg font-bold shadow-md">儲存設定</button>
-                              {msg.text && <div className={`text-xs text-center p-2 rounded ${msg.type==='error'?'bg-red-50 text-red-600':'bg-green-50 text-green-600'}`}>{msg.text}</div>}
-                          </div>
-                      ) : (
+                  <div className="p-6 overflow-y-auto space-y-6">
+                      <div className="space-y-4">
                           <div>
-                              {user && !user.isAnonymous ? (
-                                  <div className="text-center space-y-4">
-                                      <div className="w-20 h-20 bg-[#2b4f60] rounded-full mx-auto flex items-center justify-center text-white text-3xl font-bold shadow-lg">{user.email[0].toUpperCase()}</div>
-                                      <div>
-                                          <h3 className="font-bold text-lg text-stone-800">已登入</h3>
-                                          <p className="text-sm text-stone-500 font-mono">{user.email}</p>
-                                      </div>
-                                      <div className="bg-green-50 text-green-700 p-3 rounded-xl text-xs flex items-center justify-center gap-2"><Globe size={14}/> 資料已同步至雲端</div>
-                                      <button onClick={()=>{onLogout(); onClose();}} className="w-full py-2 border border-red-200 text-red-500 rounded-lg font-bold hover:bg-red-50 flex items-center justify-center gap-2"><LogOut size={16}/> 登出</button>
-                                  </div>
-                              ) : (
-                                  <div className="space-y-4">
-                                      {authMode !== 'reset' && (
-                                          <div className="flex bg-stone-100 p-1 rounded-lg mb-4">
-                                              <button onClick={()=>setAuthMode('login')} className={`flex-1 py-1.5 rounded-md text-xs font-bold transition-all ${authMode==='login'?'bg-white shadow text-stone-800':'text-stone-400'}`}>登入</button>
-                                              <button onClick={()=>setAuthMode('signup')} className={`flex-1 py-1.5 rounded-md text-xs font-bold transition-all ${authMode==='signup'?'bg-white shadow text-stone-800':'text-stone-400'}`}>註冊 (同步資料)</button>
-                                          </div>
-                                      )}
-                                      
-                                      {authMode === 'reset' ? (
-                                          <div className="space-y-3">
-                                              <h3 className="font-bold text-center">重設密碼</h3>
-                                              <input className="w-full border rounded-lg p-3 text-sm" placeholder="Email" value={email} onChange={e=>setEmail(e.target.value)} />
-                                              <button onClick={()=>handleAuth('reset')} disabled={loading} className="w-full py-2 bg-stone-800 text-white rounded-lg font-bold">{loading ? '發送中...' : '發送重設信'}</button>
-                                              <button onClick={()=>setAuthMode('login')} className="w-full text-xs text-stone-400 underline">返回登入</button>
-                                          </div>
-                                      ) : (
-                                          <div className="space-y-3">
-                                              <div className="relative"><Mail size={16} className="absolute left-3 top-3.5 text-stone-400"/><input className="w-full border rounded-lg p-3 pl-10 text-sm" placeholder="Email" value={email} onChange={e=>setEmail(e.target.value)} /></div>
-                                              <div className="relative"><Lock size={16} className="absolute left-3 top-3.5 text-stone-400"/><input type="password" className="w-full border rounded-lg p-3 pl-10 text-sm" placeholder="密碼 (至少6碼)" value={password} onChange={e=>setPassword(e.target.value)} /></div>
-                                              {authMode === 'login' && <div className="text-right"><button onClick={()=>setAuthMode('reset')} className="text-xs text-stone-400 hover:text-stone-600">忘記密碼?</button></div>}
-                                              
-                                              <button onClick={()=>handleAuth(authMode)} disabled={loading} className="w-full py-2.5 bg-[#2b4f60] text-white rounded-lg font-bold shadow-md flex items-center justify-center gap-2 hover:bg-[#1e3a8a] transition-colors">
-                                                  {loading ? <Loader2 size={16} className="animate-spin"/> : (authMode==='login' ? <LogIn size={16}/> : <UserPlus size={16}/>)}
-                                                  {authMode === 'login' ? '登入' : '註冊並綁定行程'}
-                                              </button>
-
-                                              {authMode === 'signup' && <div className="bg-yellow-50 text-yellow-700 p-2 rounded-lg text-[10px] flex items-start gap-2"><ShieldCheck size={14} className="shrink-0 mt-0.5"/> 註冊後，目前的訪客行程將自動綁定至新帳號，不會遺失。</div>}
-                                          </div>
-                                      )}
-                                      {msg.text && (
-                                       <div className={`text-xs text-center p-2 rounded flex flex-col gap-1 ${msg.type==='error'?'bg-red-50 text-red-600':'bg-green-50 text-green-600'}`}>
-                                           <span>{msg.text}</span>
-                                           {msg.text.includes('Firebase 後台') && (
-                                               <a href="https://console.firebase.google.com/" target="_blank" rel="noopener noreferrer" className="underline font-bold text-red-700">前往 Firebase Console</a>
-                                           )}
-                                       </div>
-                                      )}
-                                  </div>
-                              )}
+                             <label className="text-xs font-bold text-stone-500 mb-1 block">使用者狀態</label>
+                             <div className="p-3 bg-stone-100 rounded-lg text-sm font-bold text-stone-700 flex items-center gap-2">
+                                  <User size={16} className="text-[#2b4f60]"/>
+                                  訪客模式 (ID: {user ? user.uid.substring(0,6) : '...'})
+                             </div>
+                             <p className="text-[10px] text-stone-400 mt-2">全訪客模式，請使用行程代碼進行協作。</p>
                           </div>
-                      )}
+                          <div>
+                             <label className="text-xs font-bold text-stone-500 mb-1 block">Gemini API Key</label>
+                             <div className="relative">
+                                 <input type={showKey ? "text" : "password"} value={key} onChange={(e) => setKey(e.target.value)} className="w-full border rounded-lg p-3 text-sm pr-10" placeholder="貼上 API Key" />
+                                 <button onClick={() => setShowKey(!showKey)} className="absolute right-3 top-3 text-stone-400 hover:text-stone-600">{showKey ? <EyeOff size={16}/> : <Settings size={16}/>}</button>
+                             </div>
+                             <p className="text-[10px] text-stone-400 mt-2">用於 AI 自動座標與進階翻譯。</p>
+                          </div>
+                          <button onClick={handleSaveKey} className="w-full py-2 bg-indigo-600 text-white rounded-lg font-bold shadow-md">儲存設定</button>
+                          {msg.text && <div className={`text-xs text-center p-2 rounded ${msg.type==='error'?'bg-red-50 text-red-600':'bg-green-50 text-green-600'}`}>{msg.text}</div>}
+                      </div>
                   </div>
               </div>
             </div>
@@ -783,26 +685,9 @@
 
             if (visibleItems.length === 0) { map.setView([35.6895, 139.6917], 10); return; }
             
-            const routeGroups = {};
-            visibleItems.forEach(item => {
-                if(!routeGroups[item.routeKey]) routeGroups[item.routeKey] = [];
-                routeGroups[item.routeKey].push(item);
-            });
-
             const allLatlngs = [];
-
-            Object.values(routeGroups).forEach(groupItems => {
-                 const latlngs = groupItems.map(i => [i.lat, i.lng]);
-                 const color = groupItems[0].routeColor;
-                 if (latlngs.length > 1) {
-                     window.L.polyline(latlngs, { color: color, weight: 3, opacity: 0.7, dashArray: '5, 10' }).addTo(map);
-                 }
-                 allLatlngs.push(...latlngs);
-            });
-            
             visibleItems.forEach(m => {
               const pos = [m.lat, m.lng];
-              // 🛑 核心修改：標記統一放大至 38px
               const markerSize = 38;
               const icon = window.L.divIcon({ 
                 className: 'custom-map-icon', 
@@ -825,6 +710,7 @@
                       if (onMarkerDrag) onMarkerDrag(m.id, event.target.getLatLng().lat, event.target.getLatLng().lng); 
                   }); 
               }
+              allLatlngs.push(pos);
             });
 
             if (allLatlngs.length > 0) map.fitBounds(window.L.latLngBounds(allLatlngs), { padding: [50, 50] });
@@ -863,18 +749,6 @@
 
             if (!isOpen) return null;
 
-            const handleSave = () => {
-                onSave(data.id, { title, desc });
-                onClose();
-            };
-
-            const handleDelete = () => {
-                if(onDelete && data) {
-                    onDelete(data.id);
-                    onClose();
-                }
-            }
-
             return (
                 <div className="fixed inset-0 bg-black/50 z-[2100] flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in" onClick={onClose}>
                     <div className="bg-white rounded-2xl p-5 w-full max-w-xs shadow-2xl" onClick={e => e.stopPropagation()}>
@@ -890,9 +764,9 @@
                             </div>
                         </div>
                         <div className="flex gap-2">
-                            <button onClick={handleDelete} className="w-10 flex items-center justify-center border border-red-200 text-red-500 rounded hover:bg-red-50" title="刪除"><Trash2 size={16}/></button>
+                            <button onClick={() => {onDelete(data.id); onClose();}} className="w-10 flex items-center justify-center border border-red-200 text-red-500 rounded hover:bg-red-50" title="刪除"><Trash2 size={16}/></button>
                             <button onClick={onClose} className="flex-1 py-2 border rounded text-stone-500 text-sm font-bold">取消</button>
-                            <button onClick={handleSave} className="flex-1 py-2 bg-[#2b4f60] text-white rounded text-sm font-bold shadow">儲存</button>
+                            <button onClick={() => {onSave(data.id, { title, desc }); onClose();}} className="flex-1 py-2 bg-[#2b4f60] text-white rounded text-sm font-bold shadow">儲存</button>
                         </div>
                     </div>
                 </div>
@@ -943,11 +817,6 @@
             const timer = setTimeout(() => fetchWeather(), 500); return () => clearTimeout(timer);
           }, [targetCity, defaultLat, defaultLng, initialCity]);
 
-          const openExternalCheck = (e) => {
-              e.stopPropagation();
-              window.open(`https://www.google.com/search?q=${encodeURIComponent(targetCity)}+weather`, '_blank');
-          };
-
           const getDayLabel = (dateStr, index) => {
               if (index === 0) return "今天";
               const date = new Date(dateStr);
@@ -976,9 +845,6 @@
                                 <p className="text-xs text-stone-400">八日天氣預報</p>
                             </div>
                             <div className="flex gap-2">
-                                <button onClick={openExternalCheck} className="w-8 h-8 flex items-center justify-center bg-blue-50 text-blue-600 rounded-full hover:bg-blue-100 transition-colors" title="Google 查證">
-                                    <ExternalLink size={16} />
-                                </button>
                                 <button onClick={() => setShowForecast(false)} className="w-8 h-8 flex items-center justify-center bg-stone-100 text-stone-500 rounded-full hover:bg-stone-200">
                                     <X size={16} />
                                 </button>
@@ -1013,7 +879,8 @@
           );
         };
 
-        const FlightCard = ({ data, isEditing, onDelete, onUpdate, dragHandleProps, isLast, onEditStart, onEditEnd }) => {
+        // 🛑 修正：FlightCard 加入上移下移按鈕
+        const FlightCard = ({ data, isEditing, onDelete, onUpdate, dragHandleProps, isLast, onEditStart, onEditEnd, onMoveUp, onMoveDown, isFirst }) => {
           const [isEditMode, setIsEditMode] = useState(false);
           const [editData, setEditData] = useState({ ...data });
           const handleSave = () => { onUpdate(data.id, editData); setIsEditMode(false); if(onEditEnd) onEditEnd(); };
@@ -1023,12 +890,9 @@
           return (
               <div className="flex relative pl-4 pb-6 group">
                 {!isLast && <div className="absolute left-[35px] top-0 bottom-0 w-0.5 border-l-2 border-dashed border-stone-300 z-0"></div>}
-                {/* 移除拖曳手柄，卡片本身即可拖曳 */}
                 
-                {/* 🛑 核心修改：放大左側圓圈至 38px */}
                 <div className="w-10 flex flex-col items-center mr-4 shrink-0 z-10 pt-1">
                     <div className="w-[38px] h-[38px] rounded-full bg-blue-50 border-2 border-[#FDFCF8] shadow-sm flex items-center justify-center text-blue-500 relative z-10">
-                        {/* 使用新圖標 */}
                         {renderIconOrClass('plane', 20)}
                     </div>
                 </div>
@@ -1044,13 +908,23 @@
                         </div><div className="flex justify-between items-center px-2"><div className="text-center"><div className="text-2xl font-black text-stone-800 leading-none">{editData.depTime}</div><div className="text-sm font-bold text-stone-400 mt-1 font-mono tracking-wider">{editData.depLoc}</div></div><div className="flex-1 mx-4 flex flex-col items-center"><div className="w-full h-px bg-stone-300 relative flex justify-center mt-2 mb-2"><div className="absolute -top-3 text-blue-400 rotate-90 bg-white px-1">{renderIconOrClass('plane', 20)}</div></div></div><div className="text-center"><div className="text-2xl font-black text-stone-800 leading-none">{editData.arrTime}</div><div className="text-sm font-bold text-stone-400 mt-1 font-mono tracking-wider">{editData.arrLoc}</div></div></div></div>
                       )}
                   </div>
-                  {isEditing && !isEditMode && (<div className="flex gap-2 p-2 bg-stone-50 border-t border-stone-100"><button onClick={handleEditClick} onMouseDown={(e) => e.stopPropagation()} className="flex-1 bg-white border border-stone-200 text-stone-600 py-1.5 rounded text-xs font-bold flex items-center justify-center gap-1 hover:bg-stone-100"><Pencil size={12}/> 修改</button><button onClick={onDelete} onMouseDown={(e) => e.stopPropagation()} className="w-8 bg-white border border-red-100 text-red-500 py-1.5 rounded flex items-center justify-center hover:bg-red-50"><Trash2 size={12}/></button></div>)}
+                  {isEditing && !isEditMode && (
+                      <div className="flex gap-2 p-2 bg-stone-50 border-t border-stone-100 items-center">
+                          <button onClick={handleEditClick} onMouseDown={(e) => e.stopPropagation()} className="flex-1 bg-white border border-stone-200 text-stone-600 py-1.5 rounded text-xs font-bold flex items-center justify-center gap-1 hover:bg-stone-100"><Pencil size={12}/> 修改</button>
+                          <div className="flex gap-1 border-l border-stone-200 pl-2">
+                             <button onClick={onMoveUp} disabled={isFirst} className={`p-1.5 rounded border border-stone-200 ${isFirst ? 'bg-stone-50 text-stone-300' : 'bg-white text-stone-600 hover:bg-stone-100'}`}><ChevronUp size={14}/></button>
+                             <button onClick={onMoveDown} disabled={isLast} className={`p-1.5 rounded border border-stone-200 ${isLast ? 'bg-stone-50 text-stone-300' : 'bg-white text-stone-600 hover:bg-stone-100'}`}><ChevronDown size={14}/></button>
+                          </div>
+                          <button onClick={onDelete} onMouseDown={(e) => e.stopPropagation()} className="w-8 bg-white border border-red-100 text-red-500 py-1.5 rounded flex items-center justify-center hover:bg-red-50"><Trash2 size={12}/></button>
+                      </div>
+                  )}
                 </div>
               </div>
           );
         };
 
-        const TransportCard = ({ data, isEditing, onDelete, onUpdate, dragHandleProps, isLast, onEditStart, onEditEnd }) => {
+        // 🛑 修正：TransportCard 加入上移下移按鈕
+        const TransportCard = ({ data, isEditing, onDelete, onUpdate, dragHandleProps, isLast, onEditStart, onEditEnd, onMoveUp, onMoveDown, isFirst }) => {
           const IconComponent = ICON_MAP[data.icon] || Train;
           const [isEditMode, setIsEditMode] = useState(false);
           const [editData, setEditData] = useState({ ...data });
@@ -1063,7 +937,7 @@
           return (
             <div className="flex relative pl-4 pb-6 group">
               {!isLast && <div className="absolute left-[35px] top-0 bottom-0 w-0.5 border-l-2 border-dashed border-stone-300 z-0"></div>}
-              {/* 移除拖曳手柄，卡片本身即可拖曳 */}
+              
               <div className="w-10 flex flex-col items-center mr-4 shrink-0 z-10 pt-1">
                   <div className="w-8 h-8 rounded-full bg-[#FDFCF8] border border-stone-200 shadow-sm flex items-center justify-center text-stone-400 relative z-10"><IconComponent size={14} /></div>
               </div>
@@ -1080,7 +954,6 @@
                         <textarea className="w-full p-1 border rounded text-sm" rows={2} value={editData.desc || ''} onChange={e=>setEditData({...editData, desc:e.target.value})} placeholder="備註..." />
                     </div>
                     {!isWalk && (
-                        /* 🛑 核心修改：允許輸入符號，不再強制 parseInt */
                         <input className="w-full p-1 border rounded" value={editData.cost} onChange={e=>setEditData({...editData, cost: e.target.value})} placeholder="費用 (例如: ¥2000)"/>
                     )}
                     <div className="flex justify-end gap-2 mt-2"><button onClick={handleCancel} className="text-stone-500 text-xs px-2 py-1" onMouseDown={(e) => e.stopPropagation()}>取消</button><button onClick={handleSave} className="bg-[#2b4f60] text-white text-xs px-3 py-1 rounded" onMouseDown={(e) => e.stopPropagation()}>儲存</button></div>
@@ -1099,18 +972,27 @@
                         <div className="text-xs text-stone-500 mt-0.5">{String(data.desc || '')}</div>
                     </div>
                     {!isWalk && (
-                        /* 顯示費用，不強制 localString 如果是純文字 */
                         <div className="text-right"><div className="font-bold text-stone-700 font-serif">{data.cost ? (typeof data.cost === 'number' ? data.cost.toLocaleString() : data.cost) : ''}</div></div>
                     )}
                   </div>
                 )}
-                {isEditing && !isEditMode && (<div className="flex gap-2 mt-3 pt-2 border-t border-stone-200/50 w-full"><button onClick={handleEditClick} onMouseDown={(e) => e.stopPropagation()} className="flex-1 bg-white text-stone-600 border border-stone-200 py-1 rounded text-xs font-bold flex items-center justify-center gap-1 hover:bg-stone-50"><Pencil size={10}/> 修改</button><button onClick={onDelete} onMouseDown={(e) => e.stopPropagation()} className="w-8 bg-white text-red-500 border border-stone-200 py-1 rounded flex items-center justify-center hover:bg-red-50"><Trash2 size={10}/></button></div>)}
+                {isEditing && !isEditMode && (
+                    <div className="flex gap-2 mt-3 pt-2 border-t border-stone-200/50 w-full items-center">
+                        <button onClick={handleEditClick} onMouseDown={(e) => e.stopPropagation()} className="flex-1 bg-white text-stone-600 border border-stone-200 py-1 rounded text-xs font-bold flex items-center justify-center gap-1 hover:bg-stone-50"><Pencil size={10}/> 修改</button>
+                        <div className="flex gap-1">
+                             <button onClick={onMoveUp} disabled={isFirst} className={`p-1 rounded border border-stone-200 ${isFirst ? 'bg-stone-50 text-stone-300' : 'bg-white text-stone-600 hover:bg-stone-100'}`}><ChevronUp size={10}/></button>
+                             <button onClick={onMoveDown} disabled={isLast} className={`p-1 rounded border border-stone-200 ${isLast ? 'bg-stone-50 text-stone-300' : 'bg-white text-stone-600 hover:bg-stone-100'}`}><ChevronDown size={10}/></button>
+                        </div>
+                        <button onClick={onDelete} onMouseDown={(e) => e.stopPropagation()} className="w-8 bg-white text-red-500 border border-stone-200 py-1 rounded flex items-center justify-center hover:bg-red-50"><Trash2 size={10}/></button>
+                    </div>
+                )}
               </div>
             </div>
           );
         };
 
-        const EventCard = ({ data, onUpdate, isEditing, onDelete, onAutoCoords, dragHandleProps, isLast, onEditStart, onEditEnd }) => {
+        // 🛑 修正：EventCard 加入上移下移按鈕
+        const EventCard = ({ data, onUpdate, isEditing, onDelete, onAutoCoords, dragHandleProps, isLast, onEditStart, onEditEnd, onMoveUp, onMoveDown, isFirst }) => {
           const [isExpanded, setIsExpanded] = useState(false);
           const [isLocalEditing, setIsLocalEditing] = useState(false);
           const [editData, setEditData] = useState({ ...data });
@@ -1122,8 +1004,8 @@
           
           const isAirport = data.icon === 'airport';
 
-          if (data.type === 'flight') return <FlightCard data={data} isEditing={isEditing} onDelete={onDelete} onUpdate={onUpdate} dragHandleProps={dragHandleProps} isLast={isLast} onEditStart={onEditStart} onEditEnd={onEditEnd} />;
-          if (data.type === 'transport') return <TransportCard data={data} isEditing={isEditing} onDelete={onDelete} onUpdate={onUpdate} dragHandleProps={dragHandleProps} isLast={isLast} onEditStart={onEditStart} onEditEnd={onEditEnd} />;
+          if (data.type === 'flight') return <FlightCard data={data} isEditing={isEditing} onDelete={onDelete} onUpdate={onUpdate} dragHandleProps={dragHandleProps} isLast={isLast} onEditStart={onEditStart} onEditEnd={onEditEnd} onMoveUp={onMoveUp} onMoveDown={onMoveDown} isFirst={isFirst} />;
+          if (data.type === 'transport') return <TransportCard data={data} isEditing={isEditing} onDelete={onDelete} onUpdate={onUpdate} dragHandleProps={dragHandleProps} isLast={isLast} onEditStart={onEditStart} onEditEnd={onEditEnd} onMoveUp={onMoveUp} onMoveDown={onMoveDown} isFirst={isFirst} />;
 
           const handleSave = () => { 
               const newSubItems = tempSubItems.split('/').map(t => t.trim()).filter(Boolean).map(t => ({ text: t, icon: 'star' }));
@@ -1193,12 +1075,8 @@
             <div className="flex relative pl-4 pb-6 group">
               {!isLast && <div className="absolute left-[35px] top-8 bottom-0 w-0.5 border-l-2 border-dashed border-stone-300 z-0"></div>}
               
-              {/* 移除拖曳手柄，卡片本身即可拖曳 */}
-              
               <div className={`w-10 flex flex-col items-center mr-4 shrink-0 z-10 pt-1`}>
-                  {/* 🛑 核心修改：統一放大至 38px */}
                   <div className={`w-[38px] h-[38px] rounded-full shadow-sm flex items-center justify-center border-2 border-[#FDFCF8] relative z-10 ${getIconStyle(data.icon)}`}>
-                    {/* 使用新圖標 */}
                     {renderIconOrClass(data.icon, isAirport ? 22 : 14)}
                   </div>
               </div>
@@ -1226,7 +1104,6 @@
                       <div className="flex gap-2"><input className="w-1/3 text-xs p-1 border rounded bg-stone-50" value={editData.lat || ''} onChange={e=>setEditData({...editData, lat: e.target.value})} placeholder="緯度" /><input className="w-1/3 text-xs p-1 border rounded bg-stone-50" value={editData.lng || ''} onChange={e=>setEditData({...editData, lng: e.target.value})} placeholder="經度" /><button onClick={handleAutoCoords} disabled={isSearching} onMouseDown={(e) => e.stopPropagation()} className="flex-1 px-2 bg-indigo-100 text-indigo-700 rounded text-xs whitespace-nowrap flex items-center justify-center gap-1 hover:bg-indigo-200 disabled:opacity-50 font-bold border border-indigo-200">{isSearching ? <Loader2 size={12} className="animate-spin"/> : <React.Fragment><Star size={12}/> AI 找座標</React.Fragment>}</button></div>
                       <textarea className="w-full text-sm p-1 border rounded" rows={3} value={editData.desc} onChange={e=>setEditData({...editData, desc: e.target.value})} placeholder="描述..." />
                       
-                      {/* Image Upload Section */}
                       <div className="bg-stone-50 p-2 rounded border border-stone-200">
                           <div className="flex items-center gap-2 mb-2">
                               <label className="cursor-pointer bg-white border border-stone-300 text-stone-600 px-2 py-1 rounded text-xs font-bold flex items-center gap-1 hover:bg-stone-100">
@@ -1273,7 +1150,6 @@
                       <div className="text-xs text-stone-500 flex items-center gap-1 mb-3 ml-1"><MapPin size={10} /> {String(data.location || '')}</div>
                       <p className="text-sm text-stone-600 leading-relaxed ml-1">{String(data.desc || '')}</p>
                       
-                      {/* Image Gallery Display */}
                       {data.images && data.images.length > 0 && (
                           <div className="mt-3 ml-1 flex gap-2 overflow-x-auto pb-2 no-scrollbar">
                               {data.images.map((img, idx) => (
@@ -1284,7 +1160,16 @@
 
                       {data.subItems && Array.isArray(data.subItems) && data.subItems.length > 0 && (<div className="mt-3 space-y-1.5 bg-[#F7F5F0] p-3 rounded-lg border border-stone-100"><div className="text-[10px] text-stone-400 font-bold mb-1 flex items-center gap-1"><Star size={10}/> 必吃必買推薦</div>{data.subItems.map((item, idx) => { const SubIcon = ICON_MAP[item.icon] || MapPin; return ( <div key={idx} className="flex items-center gap-2 text-xs text-stone-600 font-medium"><SubIcon size={12} className="text-[#B74B4B]" /> {String(item.text || '')}</div> ); })}</div>)}
                       <div className="flex justify-between items-center mt-2"><button onClick={() => setIsExpanded(!isExpanded)} className="text-[10px] text-[#2b4f60] font-bold hover:underline" onMouseDown={(e) => e.stopPropagation()}>{isExpanded ? '收起' : '詳細'}</button></div>
-                      {isEditing && (<div className="flex gap-2 mt-3 pt-3 border-t border-stone-100"><button onClick={handleEditClick} onMouseDown={(e) => e.stopPropagation()} className="flex-1 bg-stone-100 text-stone-600 py-1.5 rounded text-xs font-bold flex items-center justify-center gap-1 hover:bg-stone-200"><Pencil size={12}/> 修改</button><button onClick={onDelete} onMouseDown={(e) => e.stopPropagation()} className="w-8 bg-white text-red-500 border border-stone-200 py-1.5 rounded flex items-center justify-center hover:bg-red-200"><Trash2 size={12}/></button></div>)}
+                      {isEditing && (
+                          <div className="flex gap-2 mt-3 pt-3 border-t border-stone-100 items-center">
+                              <button onClick={handleEditClick} onMouseDown={(e) => e.stopPropagation()} className="flex-1 bg-stone-100 text-stone-600 py-1.5 rounded text-xs font-bold flex items-center justify-center gap-1 hover:bg-stone-200"><Pencil size={12}/> 修改</button>
+                              <div className="flex gap-1 border-l border-stone-200 pl-2">
+                                   <button onClick={onMoveUp} disabled={isFirst} className={`p-1.5 rounded border border-stone-200 ${isFirst ? 'bg-stone-50 text-stone-300' : 'bg-white text-stone-600 hover:bg-stone-100'}`}><ChevronUp size={14}/></button>
+                                   <button onClick={onMoveDown} disabled={isLast} className={`p-1.5 rounded border border-stone-200 ${isLast ? 'bg-stone-50 text-stone-300' : 'bg-white text-stone-600 hover:bg-stone-100'}`}><ChevronDown size={14}/></button>
+                              </div>
+                              <button onClick={onDelete} onMouseDown={(e) => e.stopPropagation()} className="w-8 bg-white text-red-500 border border-stone-200 py-1.5 rounded flex items-center justify-center hover:bg-red-200"><Trash2 size={12}/></button>
+                          </div>
+                      )}
                     </React.Fragment>
                   )}
                 </div>
@@ -1325,7 +1210,7 @@
           );
         };
         
-        // ... (省略 MenuTranslator, ExpenseView, PackingView, InfoView, HomeView 以節省長度，它們的邏輯保持不變，但需包含在完整檔案中。此處僅展示核心修改部分，實際輸出請包含所有 React Components)
+        // ... (完整的 MenuTranslator, ExpenseView, PackingView, InfoView 程式碼)
         
         const MenuItemModal = ({ item, initialQty = 1, initialOptions = [], onClose, onAdd, isOpen }) => {
             const [quantity, setQuantity] = useState(initialQty);
@@ -1522,16 +1407,16 @@
                 if (!key) { setError("請先點擊右上角設定 API Key"); return; }
                 setIsTranslatingText(true); setError('');
                 try {
-                   const sourceLangName = sourceLang === 'auto' ? 'the detected language' : (LANGUAGES.find(l => l.code === sourceLang)?.label || sourceLang);
-                   const targetLangName = LANGUAGES.find(l => l.code === targetLang)?.label || targetLang;
-                   const promptTarget = targetLang === 'zh-TW' ? 'Traditional Chinese (Taiwan) which is 繁體中文' : targetLangName;
-                   
-                   const prompt = `Translate the following text from ${sourceLangName} to ${promptTarget}. Return ONLY the translation.\n\nText: ${inputText}`;
-                   const response = await fetchWithBackoff(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${key}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) });
-                   const data = await response.json();
-                   if(data.error) throw new Error(data.error.message);
-                   const resultText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-                   setTextResult(resultText);
+                    const sourceLangName = sourceLang === 'auto' ? 'the detected language' : (LANGUAGES.find(l => l.code === sourceLang)?.label || sourceLang);
+                    const targetLangName = LANGUAGES.find(l => l.code === targetLang)?.label || targetLang;
+                    const promptTarget = targetLang === 'zh-TW' ? 'Traditional Chinese (Taiwan) which is 繁體中文' : targetLangName;
+                    
+                    const prompt = `Translate the following text from ${sourceLangName} to ${promptTarget}. Return ONLY the translation.\n\nText: ${inputText}`;
+                    const response = await fetchWithBackoff(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${key}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) });
+                    const data = await response.json();
+                    if(data.error) throw new Error(data.error.message);
+                    const resultText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                    setTextResult(resultText);
                 } catch (err) { setError("翻譯失敗: " + err.message); } finally { setIsTranslatingText(false); }
             };
 
@@ -1570,9 +1455,6 @@
                     </div>
                 );
             }
-            
-            // ... (ViewMode Text 和 Camera 與原版邏輯一致，僅略過以節省篇幅)
-            // 請保留原本的 Text/Camera Render 邏輯
             
             if (viewMode === 'text') {
                 return (
@@ -1631,7 +1513,6 @@
                 );
             }
 
-            // 請將 Camera View 邏輯保留
              if (viewMode === 'camera') {
                 return (
                     <div className="flex flex-col h-full bg-white relative overflow-hidden animate-fade-in">
@@ -1665,7 +1546,7 @@
                                                           {lang.flag} {lang.label}
                                                      </button>
                                                  ))}
-                                            </div>
+                                    </div>
                                     </div>
                                  </div>
                                  {error && <div className="text-red-500 text-sm mt-2 bg-red-50 p-3 rounded-lg w-full text-center font-bold border border-red-100 mx-6 mb-6">{error}</div>}
@@ -1693,16 +1574,16 @@
                                                      <div className="space-y-4">
                                                          {items.map(item => (
                                                              <div key={item.id} onClick={() => setSelectedMenuItem(item)} className="bg-white border border-stone-100 rounded-2xl p-4 shadow-sm flex justify-between hover:shadow-md transition-all cursor-pointer">
-                                                                         <div className="flex-1 pr-2">
-                                                                             <div className="font-bold text-stone-900 text-lg">{item.translatedName}</div>
-                                                                             <div className="text-xs text-stone-400 font-mono mb-2">{item.originalName}</div>
-                                                                             <div className="text-sm text-stone-600 leading-relaxed bg-stone-50 p-2 rounded-lg">{item.description}</div>
-                                                                             <div className="text-lg font-black mt-3 text-pink-600">{item.price}</div>
-                                                                         </div>
-                                                                         <div className="flex flex-col items-center justify-center gap-3 ml-2 min-w-[3rem]">
-                                                                                 <div className="w-10 h-10 bg-pink-50 text-pink-600 rounded-full flex items-center justify-center shadow-sm"><Plus size={20}/></div>
-                                                                                 {cart[item.id]?.qty > 0 && <span className="font-bold text-lg text-pink-600">{cart[item.id].qty}</span>}
-                                                                         </div>
+                                                                     <div className="flex-1 pr-2">
+                                                                         <div className="font-bold text-stone-900 text-lg">{item.translatedName}</div>
+                                                                         <div className="text-xs text-stone-400 font-mono mb-2">{item.originalName}</div>
+                                                                         <div className="text-sm text-stone-600 leading-relaxed bg-stone-50 p-2 rounded-lg">{item.description}</div>
+                                                                         <div className="text-lg font-black mt-3 text-pink-600">{item.price}</div>
+                                                                     </div>
+                                                                     <div className="flex flex-col items-center justify-center gap-3 ml-2 min-w-[3rem]">
+                                                                             <div className="w-10 h-10 bg-pink-50 text-pink-600 rounded-full flex items-center justify-center shadow-sm"><Plus size={20}/></div>
+                                                                             {cart[item.id]?.qty > 0 && <span className="font-bold text-lg text-pink-600">{cart[item.id].qty}</span>}
+                                                                     </div>
                                                              </div>
                                                          ))}
                                                      </div>
@@ -1810,17 +1691,44 @@
           );
         };
 
+        // 🛑 修改：HomeView 新增編輯、分享、刪除按鈕
         const HomeView = ({ trips, onSelectTrip, onAddTrip, onEditTrip, onDeleteTrip, onShareTrip, onJoinTrip, user }) => {
           const [showModal, setShowModal] = useState(false);
-          const [newTrip, setNewTrip] = useState({ title: '', date: '' });
+          const [tripForm, setTripForm] = useState({ id: null, title: '', date: '' });
           const [joinCode, setJoinCode] = useState('');
+          const [deleteConfirmId, setDeleteConfirmId] = useState(null);
 
-          const handleCreate = () => {
-            if (newTrip.title) {
-              onAddTrip(newTrip);
+          const openCreateModal = () => {
+             setTripForm({ id: null, title: '', date: '' });
+             setShowModal(true);
+          };
+
+          const openEditModal = (trip) => {
+             setTripForm({ id: trip.id, title: trip.title, date: trip.date });
+             setShowModal(true);
+          };
+
+          const handleSave = () => {
+            if (tripForm.title) {
+              if (tripForm.id) {
+                  onEditTrip(tripForm.id, { title: tripForm.title, date: tripForm.date });
+              } else {
+                  onAddTrip({ title: tripForm.title, date: tripForm.date });
+              }
               setShowModal(false);
-              setNewTrip({ title: '', date: '' });
             }
+          };
+          
+          const handleShare = (id) => {
+              copyToClipboard(id);
+              alert("已複製行程代碼: " + id);
+          };
+
+          const handleDeleteConfirm = () => {
+              if (deleteConfirmId) {
+                  onDeleteTrip(deleteConfirmId);
+                  setDeleteConfirmId(null);
+              }
           };
 
           return (
@@ -1828,25 +1736,24 @@
               <div className="flex justify-between items-center mb-8 pt-4">
                 <h1 className="text-3xl font-black text-[#2b4f60] font-serif">My Trips</h1>
                 <div className="flex gap-2">
-                    <button onClick={() => setShowModal(true)} className="bg-[#2b4f60] text-white p-2 rounded-full shadow-lg hover:bg-[#1e3a8a] transition-all"><Plus size={24}/></button>
+                    <button onClick={openCreateModal} className="bg-[#2b4f60] text-white p-2 rounded-full shadow-lg hover:bg-[#1e3a8a] transition-all"><Plus size={24}/></button>
                 </div>
               </div>
 
-              <div className="space-y-4">
-                {/* Join Trip Section */}
-                <div className="bg-white p-4 rounded-2xl shadow-sm border border-stone-200 mb-6">
-                    <h3 className="text-sm font-bold text-stone-500 mb-2 flex items-center gap-2"><Users size={14}/> 加入協作行程</h3>
-                    <div className="flex gap-2">
-                        <input 
-                            value={joinCode} 
-                            onChange={(e) => setJoinCode(e.target.value)} 
-                            placeholder="輸入行程代碼" 
-                            className="flex-1 bg-stone-50 border border-stone-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-[#2b4f60]"
-                        />
-                        <button onClick={() => onJoinTrip(joinCode)} className="bg-stone-800 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-black">加入</button>
-                    </div>
-                </div>
+              <div className="bg-white p-4 rounded-2xl shadow-sm border border-stone-200 mb-6">
+                  <h3 className="text-sm font-bold text-stone-500 mb-2 flex items-center gap-2"><Users size={14}/> 加入協作行程</h3>
+                  <div className="flex gap-2">
+                      <input 
+                          value={joinCode} 
+                          onChange={(e) => setJoinCode(e.target.value)} 
+                          placeholder="輸入行程代碼" 
+                          className="flex-1 bg-stone-50 border border-stone-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-[#2b4f60]"
+                      />
+                      <button onClick={() => onJoinTrip(joinCode)} className="bg-stone-800 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-black">加入</button>
+                  </div>
+              </div>
 
+              <div className="space-y-4">
                 {trips.map(trip => (
                   <div key={trip.id} onClick={() => onSelectTrip(trip.id)} className="bg-white rounded-2xl shadow-sm border border-stone-200 overflow-hidden cursor-pointer hover:shadow-md transition-all group relative">
                     <div className="h-24" style={{ background: trip.cover }}></div>
@@ -1854,17 +1761,14 @@
                       <div className="absolute -top-8 left-4 w-12 h-12 bg-white rounded-xl shadow-sm flex items-center justify-center text-2xl border border-stone-100">
                         {trip.emoji}
                       </div>
-                      <div className="flex justify-between items-start pl-14">
-                          <div>
-                             <h3 className="font-bold text-lg text-stone-800 leading-tight mb-1">{trip.title}</h3>
-                             <p className="text-xs text-stone-500 font-medium">{trip.date}</p>
+                      <div className="pl-14"><h3 className="font-bold text-lg text-stone-800 leading-tight mb-1">{trip.title}</h3><p className="text-xs text-stone-500 font-medium">{trip.date}</p></div>
+                      <div className="mt-4 pt-3 border-t border-stone-100 flex justify-between items-center">
+                          <div className="flex items-center gap-1 bg-stone-50 px-2 py-1 rounded text-xs text-stone-500 font-mono"><Key size={10} className="text-stone-400"/> {trip.id}</div>
+                          <div className="flex gap-2">
+                              <button onClick={(e) => { e.stopPropagation(); openEditModal(trip); }} className="text-stone-400 hover:text-[#2b4f60] p-1.5 rounded-full hover:bg-stone-50" title="編輯"><Pencil size={16}/></button>
+                              <button onClick={(e) => { e.stopPropagation(); handleShare(trip.id); }} className="text-stone-400 hover:text-green-600 p-1.5 rounded-full hover:bg-green-50" title="分享代碼"><Share2 size={16}/></button>
+                              <button onClick={(e) => { e.stopPropagation(); setDeleteConfirmId(trip.id); }} className="text-stone-400 hover:text-red-500 p-1.5 rounded-full hover:bg-red-50" title="刪除"><Trash2 size={16}/></button>
                           </div>
-                          {trip.isShared && <span className="bg-indigo-50 text-indigo-600 text-[10px] font-bold px-2 py-1 rounded-full border border-indigo-100">共用</span>}
-                      </div>
-                      
-                      <div className="mt-4 flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button onClick={(e) => { e.stopPropagation(); onShareTrip(trip.id); }} className="p-2 text-stone-400 hover:text-[#2b4f60] hover:bg-stone-50 rounded-full"><Share2 size={16}/></button>
-                          <button onClick={(e) => { e.stopPropagation(); onDeleteTrip(trip.id); }} className="p-2 text-stone-400 hover:text-red-500 hover:bg-red-50 rounded-full"><Trash2 size={16}/></button>
                       </div>
                     </div>
                   </div>
@@ -1872,18 +1776,28 @@
               </div>
 
               {showModal && (
-                <div className="fixed inset-0 bg-black/50 z-[2000] flex items-center justify-center p-4">
-                  <div className="bg-white rounded-2xl p-6 w-full max-w-sm">
-                    <h3 className="text-lg font-bold mb-4">新增旅程</h3>
-                    <input className="w-full border p-2 rounded mb-2" placeholder="旅程名稱 (例: 東京五日遊)" value={newTrip.title} onChange={e => setNewTrip({...newTrip, title: e.target.value})} />
-                    <input className="w-full border p-2 rounded mb-4" placeholder="日期 (例: 2025/07/01)" value={newTrip.date} onChange={e => setNewTrip({...newTrip, date: e.target.value})} />
+                <div className="fixed inset-0 bg-black/50 z-[2000] flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in" onClick={() => setShowModal(false)}>
+                  <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl" onClick={e => e.stopPropagation()}>
+                    <h3 className="text-lg font-bold mb-4">{tripForm.id ? '編輯旅程' : '新增旅程'}</h3>
+                    <div className="space-y-3 mb-6">
+                        <div>
+                            <label className="text-xs font-bold text-stone-500 mb-1 block">名稱</label>
+                            <input className="w-full border border-stone-200 p-2 rounded-lg text-sm font-bold" placeholder="旅程名稱 (例: 東京五日遊)" value={tripForm.title} onChange={e => setTripForm({...tripForm, title: e.target.value})} />
+                        </div>
+                        <div>
+                            <label className="text-xs font-bold text-stone-500 mb-1 block">日期</label>
+                            <input className="w-full border border-stone-200 p-2 rounded-lg text-sm" placeholder="日期 (例: 2025/07/01)" value={tripForm.date} onChange={e => setTripForm({...tripForm, date: e.target.value})} />
+                        </div>
+                    </div>
                     <div className="flex gap-2">
-                      <button onClick={() => setShowModal(false)} className="flex-1 py-2 border rounded text-stone-500">取消</button>
-                      <button onClick={handleCreate} className="flex-1 py-2 bg-[#2b4f60] text-white rounded font-bold">建立</button>
+                      <button onClick={() => setShowModal(false)} className="flex-1 py-2.5 border border-stone-200 rounded-xl text-stone-500 font-bold hover:bg-stone-50">取消</button>
+                      <button onClick={handleSave} className="flex-1 py-2.5 bg-[#2b4f60] text-white rounded-xl font-bold shadow-lg">{tripForm.id ? '儲存' : '建立'}</button>
                     </div>
                   </div>
                 </div>
               )}
+              
+              <Dialog isOpen={!!deleteConfirmId} title="刪除行程" message="確定要刪除這個行程嗎？此動作無法復原。" onConfirm={handleDeleteConfirm} onCancel={() => setDeleteConfirmId(null)} type="confirm" />
             </div>
           );
         };
@@ -1896,9 +1810,6 @@
           
           const [currentTripId, setCurrentTripId] = useState(null); 
           const currentTrip = trips.find(t => t.id === currentTripId);
-          const isTripShared = currentTrip?.isShared || false;
-
-          const [sharedItineraryData, setSharedItineraryData] = usePersistentData('itineraries', currentTripId || 'dummy', [], user, isTripShared ? 'public' : 'skip');
 
           const [activeDay, setActiveDay] = useState(1);
           const [route, setRoute] = useState(null); 
@@ -1913,16 +1824,12 @@
           const [editDayData, setEditDayData] = useState({ title: '', date: '', city: '' });
           
           const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, id: null, type: 'item' });
-          const [alertDialog, setAlertDialog] = useState({ isOpen: false, message: '', title: '' });
           const [mapEditDialog, setMapEditDialog] = useState({ isOpen: false, data: null }); 
 
           const [showSettings, setShowSettings] = useState(false);
           const [editingItemId, setEditingItemId] = useState(null); 
-          const dragItem = useRef();
-          const dragOverItem = useRef();
           
           const scrollRef = useRef(null);
-          const Sparkles = Star; 
 
           useEffect(() => {
             const loader = document.getElementById('loader');
@@ -1939,99 +1846,41 @@
           useEffect(() => { 
               const initAuth = async () => { 
                   if (!auth) return; 
-                  if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) { 
-                      await signInWithCustomToken(auth, __initial_auth_token); 
-                  } else { 
-                      onAuthStateChanged(auth, (u) => {
-                          if (u) {
-                              setUser(u);
-                          } else {
-                              signInAnonymously(auth).catch((e) => {
-                                   const errCode = e.code || e.message || "";
-                                   if (!errCode.includes('operation-not-allowed')) {
-                                       console.error(e);
-                                   } else {
-                                       console.log("提示：Firebase 匿名登入未啟用，請至後台開啟以啟用訪客模式。");
-                                   }
-                              });
-                          }
-                      });
-                  } 
+                  onAuthStateChanged(auth, (u) => {
+                      if (u) {
+                          setUser(u);
+                      } else {
+                          signInAnonymously(auth).catch((e) => {
+                               console.log("Firebase Anonymously Error", e);
+                          });
+                      }
+                  });
               }; 
               initAuth(); 
           }, []);
           
-          const handleLogin = async (email, password) => { 
-              await signInWithEmailAndPassword(auth, email, password); 
-              setShowSettings(false); 
-          };
-          
-          const handleSignup = async (email, password) => {
-            const currentUser = auth.currentUser;
-            if (currentUser && currentUser.isAnonymous) {
-                try {
-                    const credential = EmailAuthProvider.credential(email, password);
-                    await linkWithCredential(currentUser, credential);
-                    setShowSettings(false);
-                    setAlertDialog({ isOpen: true, title: "註冊成功", message: "已成功綁定您的行程資料到新帳號！" });
-                } catch (error) {
-                    if (error.code === 'auth/email-already-in-use') {
-                        throw new Error("此 Email 已被其他帳號使用。請改用登入（注意：目前行程將不會合併）。");
-                    } else if (error.code === 'auth/weak-password') {
-                        throw new Error("密碼強度不足，請使用至少 6 位數密碼。");
-                    } else {
-                        console.error("Link Error", error);
-                        throw new Error("綁定失敗，請稍後再試: " + error.message);
-                    }
-                }
-            } else {
-                try {
-                    await createUserWithEmailAndPassword(auth, email, password);
-                    setShowSettings(false);
-                } catch (error) {
-                    if (error.code === 'auth/email-already-in-use') {
-                         throw new Error("此 Email 已被註冊，請直接登入。");
-                    } else if (error.code === 'auth/weak-password') {
-                        throw new Error("密碼強度不足，請使用至少 6 位數密碼。");
-                    }
-                    throw error;
-                }
-            }
-          };
-          
-          const handleLogout = async () => { await signOut(auth); }; 
-
-          const handleResetPassword = async (email) => {
-              if (!email) throw new Error("請輸入 Email");
-              try {
-                  await sendPasswordResetEmail(auth, email);
-              } catch (error) {
-                  if (error.code === 'auth/user-not-found') throw new Error("找不到此 Email 的使用者帳號。");
-                  if (error.code === 'auth/invalid-email') throw new Error("Email 格式不正確。");
-                  throw error;
-              }
-          };
-
           const itinerary = useMemo(() => { 
               if (!currentTripId) return [];
-              if (isTripShared) {
-                  return Array.isArray(sharedItineraryData) ? sharedItineraryData : (sharedItineraryData?.days || []); 
-              }
               return privateItineraries[currentTripId] || (currentTripId === 'trip-2025-japan' ? INITIAL_ITINERARY_DATA : [{ day: 1, date: "Day 1", city: "未設定", title: "旅程開始", themeColor: "gray", timeline: [] }]); 
-          }, [privateItineraries, sharedItineraryData, currentTripId, isTripShared]);
+          }, [privateItineraries, currentTripId]);
 
           const getActiveRouteKey = (day, currentRouteState) => { if (!day.hasRoutes) return null; const keys = Object.keys(day.routes); return (currentRouteState && day.routes[currentRouteState]) ? currentRouteState : keys[0]; };
 
-          const handleAddTrip = (newTrip) => { const id = `trip-${Date.now()}`; const trip = { id, title: newTrip.title, date: newTrip.date, cover: "linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)", emoji: "✈️", status: "planning", days: 1 }; setTrips([...trips, trip]); setPrivateItineraries({ ...privateItineraries, [id]: [{ day: 1, date: "Day 1", city: "城市", title: "旅程開始", themeColor: "gray", timeline: [] }] }); };
+          // 🛑 修改：行程代碼生成 (trip-YYYYMMDD-#CODE)
+          const handleAddTrip = (newTrip) => { 
+               const dateStr = newTrip.date.replace(/\D/g, ''); 
+               const visitorCode = Math.random().toString(36).substring(2, 6).toUpperCase();
+               const id = `trip-${dateStr}-#${visitorCode}`; 
+               const trip = { id, title: newTrip.title, date: newTrip.date, cover: "linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)", emoji: "✈️", status: "planning", days: 1 }; 
+               setTrips([...trips, trip]); 
+               setPrivateItineraries({ ...privateItineraries, [id]: [{ day: 1, date: "Day 1", city: "城市", title: "旅程開始", themeColor: "gray", timeline: [] }] }); 
+          };
+
           const handleEditTrip = (id, updatedData) => { setTrips(trips.map(t => t.id === id ? { ...t, ...updatedData } : t)); };
           const handleDeleteTrip = (id) => { setTrips(trips.filter(t => t.id !== id)); const next = { ...privateItineraries }; delete next[id]; setPrivateItineraries(next); };
           
           const updateCurrentItinerary = (newItinerary) => { 
-              if (isTripShared) {
-                    setSharedItineraryData(newItinerary); 
-              } else {
-                    setPrivateItineraries({ ...privateItineraries, [currentTripId]: newItinerary }); 
-              }
+                setPrivateItineraries({ ...privateItineraries, [currentTripId]: newItinerary }); 
           };
           
           const handleAddDay = () => { const newDayNum = itinerary.length + 1; const newDay = { day: newDayNum, date: `Day ${newDayNum}`, city: "城市", title: "新的一天", themeColor: "gray", timeline: [] }; updateCurrentItinerary([...itinerary, newDay]); setActiveDay(newDayNum); };
@@ -2044,7 +1893,9 @@
           const handleDeleteDay = (e, dayNum) => { e.stopPropagation(); if(itinerary.length <= 1) return; const newItinerary = itinerary.filter(d => d.day !== dayNum).map((d, idx) => ({ ...d, day: idx + 1, date: d.day > dayNum ? d.date : d.date })); updateCurrentItinerary(newItinerary); if(activeDay === dayNum) setActiveDay(1); else if(activeDay > dayNum) setActiveDay(activeDay - 1); };
 
           const currentData = useMemo(() => { if (!itinerary.length) return null; const base = itinerary.find(d => d.day === activeDay); if (!base) return itinerary[0]; if (base.hasRoutes) { const routeKeys = Object.keys(base.routes); const currentRouteKey = (route && base.routes[route]) ? route : routeKeys[0]; const selectedRoute = base.routes[currentRouteKey] || { name: "Loading", timeline: [] }; return { ...base, title: selectedRoute.name, timeline: selectedRoute.timeline, city: selectedRoute.city || base.city }; } return base; }, [activeDay, route, itinerary]);
+          
           useEffect(() => { if (scrollRef.current && view === 'itinerary') { const activeBtn = scrollRef.current.children[activeDay - 1]; if (activeBtn) activeBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' }); } }, [activeDay, view]);
+          
           const handleAddItem = () => { 
               let itemType = 'event'; 
               if (newEventData.iconType === 'plane') { itemType = 'flight'; } 
@@ -2070,7 +1921,7 @@
                   if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
               }, 100);
           };
-          const handleShare = async () => { try { const shareText = `我的行程: ${currentTrip.title}\n${currentData.date} @ ${currentData.city}\nCheck this out!`; if (navigator.share) { await navigator.share({ title: currentTrip.title, text: shareText, url: window.location.href }); } else { copyToClipboard(shareText + "\n" + window.location.href); setAlertDialog({ isOpen: true, title: "已複製", message: "行程連結已複製到剪貼簿！" }); } } catch (err) { console.error("Share failed:", err); } };
+          
           const handleHideEvent = (id) => { const newItinerary = itinerary.map(day => { if (day.day !== activeDay) return day; if (day.hasRoutes) { const currentKey = getActiveRouteKey(day, route); const newTimeline = day.routes[currentKey].timeline.map(t => t.id === id ? { ...t, hideOnMap: true } : t); return { ...day, routes: { ...day.routes, [currentKey]: { ...day.routes[currentKey], timeline: newTimeline } } }; } else { const newTimeline = day.timeline.map(t => t.id === id ? { ...t, hideOnMap: true } : t); return { ...day, timeline: newTimeline }; } }); updateCurrentItinerary(newItinerary); };
           const handleRenameRoute = (key, newName) => { const newItinerary = itinerary.map(d => { if (d.day !== activeDay) return d; return { ...d, routes: { ...d.routes, [key]: { ...d.routes[key], name: newName } } }; }); updateCurrentItinerary(newItinerary); };
           const handleDeleteRoute = (key) => { setConfirmDialog({ isOpen: true, id: key, type: 'route' }); };
@@ -2100,35 +1951,31 @@
                 return coords;
           };
 
-          const handleDragStart = (e, position) => {
-                dragItem.current = position;
-          };
+          // 🛑 修改：實現上移下移邏輯
+          const handleMoveItem = (itemId, direction) => {
+               const newItinerary = itinerary.map(d => {
+                   if (d.day !== activeDay) return d;
+                   const swap = (list) => {
+                       const idx = list.findIndex(t => t.id === itemId);
+                       if (idx === -1) return list;
+                       const targetIdx = idx + direction;
+                       if (targetIdx < 0 || targetIdx >= list.length) return list; // Out of bounds
+                       
+                       const newList = [...list];
+                       // Swap
+                       const temp = newList[idx];
+                       newList[idx] = newList[targetIdx];
+                       newList[targetIdx] = temp;
+                       return newList;
+                   };
 
-          const handleDragEnter = (e, position) => {
-                dragOverItem.current = position;
-          };
-
-          const handleDragEnd = () => {
-                const day = itinerary.find(d => d.day === activeDay);
-                if (!day) return;
-                
-                let list = [...currentData.timeline];
-                const dragItemContent = list[dragItem.current];
-                list.splice(dragItem.current, 1);
-                list.splice(dragOverItem.current, 0, dragItemContent);
-                
-                dragItem.current = null;
-                dragOverItem.current = null;
-
-                const newItinerary = itinerary.map(d => {
-                    if (d.day !== activeDay) return d;
-                    if (d.hasRoutes) {
-                        const currentKey = getActiveRouteKey(d, route);
-                         return { ...d, routes: { ...d.routes, [currentKey]: { ...d.routes[currentKey], timeline: list } } };
-                    }
-                    return { ...d, timeline: list };
-                });
-                updateCurrentItinerary(newItinerary);
+                   if (d.hasRoutes) {
+                       const currentKey = getActiveRouteKey(d, route);
+                       return { ...d, routes: { ...d.routes, [currentKey]: { ...d.routes[currentKey], timeline: swap(d.routes[currentKey].timeline) } } };
+                   }
+                   return { ...d, timeline: swap(d.timeline) };
+               });
+               updateCurrentItinerary(newItinerary);
           };
 
           const confirmDelete = (id) => {
@@ -2162,78 +2009,14 @@
               setConfirmDialog({ isOpen: false, id: null, type: 'item' }); 
           };
           
-          const handleShareTrip = async (tripId) => {
-              if (!user) {
-                setAlertDialog({ isOpen: true, title: "錯誤", message: "請稍候，正在初始化使用者資料..." });
-                return;
-              }
-
-              const itineraryData = privateItineraries[tripId];
-              if (!itineraryData) return;
-              
-              try {
-                  const publicPath = `artifacts/${appId}/public/data`;
-                  await setDoc(doc(db, `${publicPath}/itineraries/${tripId}`), { data: itineraryData });
-                  
-                  const userId = user.uid;
-                  const userPath = `artifacts/${appId}/users/${userId}`;
-                  const copyCollection = async (col) => {
-                      try {
-                        const snap = await getDoc(doc(db, `${userPath}/${col}/${tripId}`));
-                        if (snap.exists()) {
-                            await setDoc(doc(db, `${publicPath}/${col}/${tripId}`), snap.data());
-                        }
-                      } catch(e) {}
-                  };
-                  
-                  await copyCollection('expenses');
-                  await copyCollection('packing');
-                  await copyCollection('infos');
-
-                  setTrips(trips.map(t => t.id === tripId ? { ...t, isShared: true } : t));
-                  
-                  setAlertDialog({ isOpen: true, title: "共用成功", message: `行程已轉換為共用模式！\n行程代碼: ${tripId}\n將此代碼傳送給朋友，他們即可加入協作。` });
-              } catch (e) {
-                  console.error("Share Error", e);
-                  setAlertDialog({ isOpen: true, title: "錯誤", message: "共用設定失敗，請稍後再試。" });
-              }
-          };
-
           const handleJoinTrip = async (code) => {
-              try {
-                  const snap = await getDoc(doc(db, `artifacts/${appId}/public/data/itineraries/${code}`));
-                  if (snap.exists()) {
-                      const existing = trips.find(t => t.id === code);
-                      if (existing) {
-                          setAlertDialog({ isOpen: true, title: "提示", message: "您已經擁有此行程了。" });
-                          return;
-                      }
-                      const data = snap.data().data || [];
-                      const firstDay = data[0] || {};
-                      const title = firstDay.title || "共用行程";
-                      const date = firstDay.date || "Unknown";
-                      
-                      const newTrip = {
-                          id: code,
-                          title: `(共用) ${title}`,
-                          date: date,
-                          emoji: "🤝",
-                          cover: "linear-gradient(135deg, #FF9966 0%, #FF5E62 100%)",
-                          status: "planning",
-                          isShared: true
-                      };
-                      
-                      setTrips([...trips, newTrip]);
-                      setAlertDialog({ isOpen: true, title: "加入成功", message: "已成功加入協作行程！" });
-                  } else {
-                      setAlertDialog({ isOpen: true, title: "找不到行程", message: "無效的行程代碼，請確認後再試。" });
-                  }
-              } catch (e) {
-                  setAlertDialog({ isOpen: true, title: "錯誤", message: "加入失敗，請檢查網路連線。" });
-              }
+              if (!code) return;
+              if (trips.find(t => t.id === code)) { alert("您已經擁有此行程了。"); return; }
+              const newTrip = { id: code, title: "(協作) 新行程", date: "未設定", emoji: "🤝", cover: "linear-gradient(135deg, #FF9966 0%, #FF5E62 100%)", status: "planning" };
+              setTrips([...trips, newTrip]);
           };
 
-          if (!currentTripId) { return ( <HomeView trips={trips} onSelectTrip={(id)=>{ setCurrentTripId(id); setActiveDay(1); }} onAddTrip={handleAddTrip} onEditTrip={handleEditTrip} onDeleteTrip={handleDeleteTrip} onShareTrip={handleShareTrip} onJoinTrip={handleJoinTrip} user={user} /> ); }
+          if (!currentTripId) { return ( <HomeView trips={trips} onSelectTrip={(id)=>{ setCurrentTripId(id); setActiveDay(1); }} onAddTrip={handleAddTrip} onEditTrip={handleEditTrip} onDeleteTrip={handleDeleteTrip} onShareTrip={()=>{}} onJoinTrip={handleJoinTrip} user={user} /> ); }
           
           if (!currentData && itinerary.length > 0) {
               setActiveDay(itinerary[0].day);
@@ -2244,14 +2027,13 @@
           return (
             <div className="h-[100dvh] bg-[#f4f4f0] font-sans text-[#2C3E50] max-w-md mx-auto shadow-2xl overflow-hidden flex flex-col relative transition-all duration-300">
               <div className="bg-[#FDFCF8]/90 backdrop-blur-md pt-12 px-4 pb-3 border-b border-stone-200 shrink-0 z-[1001] flex justify-between items-center shadow-sm">
-                <div className="flex items-center gap-2"><button onClick={() => setCurrentTripId(null)} className="text-stone-400 hover:text-[#2b4f60] p-1 rounded-full hover:bg-stone-100 transition-colors"><ArrowLeft size={18} /></button><div className="text-sm font-bold tracking-widest text-[#2b4f60] py-2 font-serif flex items-center gap-2"><span className="text-[#B74B4B]">●</span> {currentTrip.title} {isTripShared && <span className="text-[10px] bg-stone-100 px-1 rounded border">共用</span>}</div></div>
+                <div className="flex items-center gap-2"><button onClick={() => setCurrentTripId(null)} className="text-stone-400 hover:text-[#2b4f60] p-1 rounded-full hover:bg-stone-100 transition-colors"><ArrowLeft size={18} /></button><div className="text-sm font-bold tracking-widest text-[#2b4f60] py-2 font-serif flex items-center gap-2"><span className="text-[#B74B4B]">●</span> {currentTrip.title} </div></div>
                 <div className="flex gap-2 items-center">
                   {view === 'itinerary' && <WeatherWidget city={currentData.city} initialCity={currentData.city} defaultLat={currentData.defaultLat} defaultLng={currentData.defaultLng} />}
                   <button onClick={() => setShowSettings(true)} className={`text-stone-400 hover:text-[#2b4f60] p-1 rounded-full transition-colors relative ${user?.isAnonymous ? 'bg-yellow-50 text-yellow-500 hover:text-yellow-600' : 'text-[#2b4f60]'}`}>
                       <Settings size={18}/>
                       {user?.isAnonymous && <span className="absolute top-0 right-0 w-2 h-2 bg-yellow-500 rounded-full border border-white"></span>}
                   </button>
-                  <button onClick={() => { if(isTripShared) { copyToClipboard(currentTrip.id); setAlertDialog({isOpen:true, title:"已複製代碼", message:`共用代碼: ${currentTrip.id}`}); } else { handleShare(); } }} className="text-stone-400 hover:text-[#2b4f60]">{isTripShared ? <Users size={18}/> : <Share2 size={18}/>}</button>
                 </div>
               </div>
               
@@ -2306,7 +2088,7 @@
                             
                             <div className="px-4 py-6">
                               <div className={`mb-6 pl-3 border-l-4 border-${currentData.themeColor}-600 flex justify-between items-end`}>
-                                {isEditingDay ? ( <div className="space-y-2 w-full mr-2"><input className="w-full p-1 border rounded text-lg font-bold" value={editDayData.title} onChange={e=>setEditDayData({...editDayData, title:e.target.value})} placeholder="標題"/><div className="flex gap-2"><input className="w-1/2 p-1 border rounded text-xs" value={editDayData.date} onChange={e=>setEditDayData({...editDayData, date:e.target.value})} placeholder="日期"/><input className="w-1/2 p-1 border rounded text-xs" value={editDayData.city} onChange={e=>setEditDayData({...editDayData, city:e.target.value})} placeholder="城市"/></div><button onClick={handleUpdateDayInfo} className="bg-green-600 text-white text-xs px-2 py-1 rounded">完成</button></div> ) : ( <div onClick={() => { if(isTimelineEditMode) { setEditDayData({title: currentData.title, date: currentData.date, city: currentData.city}); setIsEditingDay(true); }}} className={isTimelineEditMode ? "cursor-pointer border border-dashed border-transparent hover:border-stone-300 rounded p-1" : ""}><h2 className="text-2xl font-bold text-[#2C3E50] mb-1 font-serif">{currentData.title}</h2><div className="flex items-center gap-2 text-sm text-stone-500 font-medium"><MapPin size={14} /> {currentData.city}</div></div> )}
+                                {isEditingDay ? ( <div className="space-y-2 w-full mr-2"><input className="w-full p-1 border rounded text-lg font-bold" value={editDayData.title} onChange={e=>setEditDayData({...editDayData, title:e.target.value})} placeholder="標題"/><div className="flex gap-2"><input className="w-1/2 p-1 border rounded text-xs" value={editDayData.date} onChange={e=>setEditDayData({...editData, date:e.target.value})} placeholder="日期"/><input className="w-1/2 p-1 border rounded text-xs" value={editDayData.city} onChange={e=>setEditDayData({...editDayData, city:e.target.value})} placeholder="城市"/></div><button onClick={handleUpdateDayInfo} className="bg-green-600 text-white text-xs px-2 py-1 rounded">完成</button></div> ) : ( <div onClick={() => { if(isTimelineEditMode) { setEditDayData({title: currentData.title, date: currentData.date, city: currentData.city}); setIsEditingDay(true); }}} className={isTimelineEditMode ? "cursor-pointer border border-dashed border-transparent hover:border-stone-300 rounded p-1" : ""}><h2 className="text-2xl font-bold text-[#2C3E50] mb-1 font-serif">{currentData.title}</h2><div className="flex items-center gap-2 text-sm text-stone-500 font-medium"><MapPin size={14} /> {currentData.city}</div></div> )}
                                 <div className="flex flex-col gap-2 justify-end"><button onClick={() => setIsTimelineEditMode(!isTimelineEditMode)} className={`text-stone-400 hover:text-[#2b4f60] p-1 rounded-full ${isTimelineEditMode ? 'bg-stone-200 text-[#2b4f60]' : ''}`}><Pencil size={18}/></button></div>
                               </div>
                               
@@ -2319,27 +2101,22 @@
                               <div className="">{currentData.timeline.map((item, idx) => { 
                                   const isLast = idx === currentData.timeline.length - 1; 
                                   return ( 
-                                    <div key={item.id} 
-                                       id={item.id}
-                                       draggable={isTimelineEditMode && editingItemId !== item.id} 
-                                       onDragStart={(e) => handleDragStart(e, idx)} 
-                                       onDragEnter={(e) => handleDragEnter(e, idx)} 
-                                       onDragOver={(e) => e.preventDefault()} 
-                                       onDragEnd={handleDragEnd} 
-                                       className={`${isTimelineEditMode ? "pl-12 transition-all" : ""} ${isTimelineEditMode && editingItemId !== item.id ? "cursor-move" : ""} ${isTimelineEditMode && editingItemId === item.id ? "cursor-default" : ""}`}
-                                     >
-                                              <EventCard 
-                                                  key={item.id} 
-                                                  data={item} 
-                                                  onUpdate={handleUpdateEvent} 
-                                                  onAutoCoords={fetchCoordinates} 
-                                                  isEditing={isTimelineEditMode} 
-                                                  onDelete={() => confirmDelete(item.id)} 
-                                                  dragHandleProps={{}} 
-                                                  isLast={isLast}
-                                                  onEditStart={() => setEditingItemId(item.id)}
-                                                  onEditEnd={() => setEditingItemId(null)}
-                                              /> 
+                                    <div key={item.id} id={item.id} className={`${isTimelineEditMode ? "transition-all" : ""}`}>
+                                      <EventCard 
+                                          key={item.id} 
+                                          data={item} 
+                                          onUpdate={handleUpdateEvent} 
+                                          onAutoCoords={fetchCoordinates} 
+                                          isEditing={isTimelineEditMode} 
+                                          onDelete={() => confirmDelete(item.id)} 
+                                          dragHandleProps={{}} 
+                                          isLast={isLast}
+                                          isFirst={idx === 0}
+                                          onEditStart={() => setEditingItemId(item.id)}
+                                          onEditEnd={() => setEditingItemId(null)}
+                                          onMoveUp={() => handleMoveItem(item.id, -1)}
+                                          onMoveDown={() => handleMoveItem(item.id, 1)}
+                                      /> 
                                     </div> 
                                   ); 
                               })}</div>
@@ -2350,20 +2127,17 @@
                          </div>
                       </>
                   )}
-                  {view === 'expenses' && <ExpenseView tripId={currentTripId} user={user} isShared={isTripShared} />}
-                  {view === 'packing' && <PackingView tripId={currentTripId} user={user} isShared={isTripShared} />}
+                  {view === 'expenses' && <ExpenseView tripId={currentTripId} user={user} />}
+                  {view === 'packing' && <PackingView tripId={currentTripId} user={user} />}
                   {view === 'translation' && <TranslationView />}
-                  {view === 'info' && <InfoView tripId={currentTripId} user={user} isShared={isTripShared} />}
+                  {view === 'info' && <InfoView tripId={currentTripId} user={user} />}
               </div>
               
-              {/* ... Modals and Bottom Nav ... */}
               {showAddModal && (<div className="fixed inset-0 bg-black/50 z-[2000] flex items-center justify-center p-6 backdrop-blur-sm"><div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl h-[80vh] flex flex-col"><h3 className="text-lg font-bold mb-4">新增{newEventData.type === 'event' ? '行程' : '交通'}</h3><input className="w-full border rounded p-2 mb-4" placeholder="標題/名稱" value={newEventData.title} onChange={e=>setNewEventData({...newEventData, title: e.target.value})} /><div className="flex-1 overflow-y-auto mb-4">{Object.entries(ICON_CATEGORIES).map(([key, category]) => (<div key={key} className="mb-4"><h4 className="text-xs font-bold text-stone-500 mb-2">{category.title}</h4><div className="grid grid-cols-4 gap-2">{category.icons.map(iconItem => { const IconComponent = ICON_MAP[iconItem.id] || MapPin; return ( <button key={iconItem.id} onClick={() => setNewEventData({ ...newEventData, iconType: iconItem.id, type: key === 'transport' ? 'transport' : 'event' })} className={`flex flex-col items-center justify-center p-2 rounded border transition-all ${newEventData.iconType === iconItem.id ? 'bg-[#2b4f60] text-white border-[#2b4f60]' : 'bg-white text-stone-400 hover:bg-stone-50'}`}><IconComponent size={20}/><span className="text-[10px] mt-1">{iconItem.label}</span></button> ); })}</div></div>))}</div><div className="flex gap-2 mt-auto"><button onClick={() => setShowAddModal(false)} className="flex-1 py-3 border rounded text-stone-500 font-bold">取消</button><button onClick={handleAddItem} className="flex-1 py-3 bg-[#2b4f60] text-white rounded font-bold shadow-lg">確認</button></div></div></div>)}
               <Dialog isOpen={confirmDialog.isOpen} title={confirmDialog.type === 'route' ? "刪除路線" : "刪除項目"} message={confirmDialog.type === 'route' ? "確定要刪除此分歧路線嗎？" : "確定要刪除此行程項目嗎？此動作無法復原。"} onConfirm={executeDelete} onCancel={() => setConfirmDialog({ isOpen: false, id: null, type: 'item' })} type="confirm" />
-              <Dialog isOpen={alertDialog.isOpen} title={alertDialog.title} message={alertDialog.message} onConfirm={() => setAlertDialog({ ...alertDialog, isOpen: false })} type="alert" />
               <MapMarkerEditDialog isOpen={mapEditDialog.isOpen} data={mapEditDialog.data} onClose={() => setMapEditDialog({isOpen: false, data: null})} onSave={(id, data) => handleUpdateEvent(id, data)} onDelete={(id) => { confirmDelete(id); setMapEditDialog({isOpen: false, data: null}); }} />
-              <GlobalSettings isOpen={showSettings} onClose={() => setShowSettings(false)} user={user} onLogin={handleLogin} onSignup={handleSignup} onLogout={handleLogout} onResetPassword={handleResetPassword} currentProjectId={appId} />
+              <GlobalSettings isOpen={showSettings} onClose={() => setShowSettings(false)} user={user} currentProjectId={appId} />
               
-              {/* Bottom Navigation */}
               <div className="bg-[#FDFCF8] border-t border-stone-200 pb-safe pt-2 px-2 grid grid-cols-5 shrink-0 z-30 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
                   <button onClick={() => setView('itinerary')} className={`flex flex-col items-center justify-center p-2 gap-1 transition-colors ${view === 'itinerary' ? 'text-[#2b4f60]' : 'text-stone-300 hover:text-stone-50'}`}>
                       <BookOpen size={22} strokeWidth={view === 'itinerary' ? 2.5 : 2} /><span className="text-[10px] font-bold font-serif">行程</span>
