@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Trip App 2025 (Final Fix v2)</title>
+    <title>Trip App 2025 (Final Pro)</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -49,7 +49,7 @@
         const { useState, useEffect, useRef, useMemo } = React;
         const { createPortal } = ReactDOM;
 
-        // ... (Icon definitions remain same) ...
+        // ... (Icons) ...
         const FALLBACK_ICONS = {
             Pencil: [['path', { d: "M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" }]],
             Plus: [['path', { d: "M5 12h14" }], ['path', { d: "M12 5v14" }]],
@@ -206,7 +206,8 @@
             MoveUp, MoveDown, Loader2, Image: ImageIcon, Settings, Check, Globe, AlertCircle, Copy, FileText, ExternalLink, History, 
             ChevronRight, Ticket, Music, Mountain, Tent, Bike, Waves, Palette, Ghost, Gamepad2, Landmark: Temple, Beer, Wine, Anchor, 
             Map: MapIcon, Crosshair, MoreVertical, AlertTriangle, Key, MessageSquare, Minus, GitBranch, MicOff, EyeOff, Sparkles, 
-            Link: LinkIcon, Upload, Image: ImgIcon, Clock, User, LogOut, UserPlus, LogIn, Lock, ShieldCheck, Mail, Database
+            Link: LinkIcon, Upload, Image: ImgIcon, Clock, User, LogOut, UserPlus, LogIn, Lock, ShieldCheck, Mail, Database,
+            Cloud: CloudIcon, Check: CheckIcon, RotateCw
         } = LucideIcons;
 
         // 🛑 渲染 Lucide Icon 或 自定義 Class Icon (fi-rr-plane-alt) 
@@ -270,6 +271,39 @@
           appId: "1:911454329161:web:64d07a73ba2c15993a6298"
         };
 
+        // 🆕 圖片自動壓縮功能
+        const compressImage = (file) => {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = (event) => {
+                    const img = new Image();
+                    img.src = event.target.result;
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        const MAX_WIDTH = 800;
+                        const MAX_HEIGHT = 800;
+                        let width = img.width;
+                        let height = img.height;
+
+                        if (width > height) {
+                            if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
+                        } else {
+                            if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; }
+                        }
+
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+                        
+                        // 轉為 JPEG 格式，品質 0.5 (大幅縮小檔案)
+                        resolve(canvas.toDataURL('image/jpeg', 0.5)); 
+                    };
+                };
+            });
+        };
+
         const getMapLink = (query) => `https://www.google.com/maps/search/?api=1&query=$?q=${encodeURIComponent(query || '')}`;
 
         const copyToClipboard = (text) => {
@@ -293,6 +327,16 @@
           KRW: { id: 'KRW', name: '韓元', symbol: '₩', rate: 0.024, flag: '🇰🇷' },
           EUR: { id: 'EUR', name: '歐元', symbol: '€', rate: 34.2, flag: '🇪🇺' }
         };
+
+        // 🆕 預設漸層主題色
+        const THEME_COLORS = [
+            { name: "夢幻紫", value: "linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)" },
+            { name: "清爽藍", value: "linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%)" },
+            { name: "溫暖橘", value: "linear-gradient(135deg, #fccb90 0%, #d57eeb 100%)" },
+            { name: "沈穩灰", value: "linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%)" },
+            { name: "熱情紅", value: "linear-gradient(135deg, #ff9a9e 0%, #fecfef 99%, #fecfef 100%)" },
+            { name: "活力綠", value: "linear-gradient(135deg, #96fbc4 0%, #f9f586 100%)" }
+        ];
 
         const ICON_MAP = {
           plane: Plane, train: Train, subway: Train, bus: Bus, car: Car, ship: Ship, bike: Bike, walk: Footprints,
@@ -475,6 +519,7 @@
         const usePersistentData = (collectionName, docId, initialValue, user, mode='private') => {
           const [data, setData] = useState(initialValue);
           const [isLoaded, setIsLoaded] = useState(false);
+          const [syncStatus, setSyncStatus] = useState('saved'); // 'saved', 'saving', 'error'
 
           useEffect(() => {
             const localKey = `local_${collectionName}_${docId}`;
@@ -505,6 +550,7 @@
 
           const saveData = async (newData) => {
             setData(newData);
+            setSyncStatus('saving');
             const localKey = `local_${collectionName}_${docId}`;
             localStorage.setItem(localKey, JSON.stringify(newData));
             if (user && db) {
@@ -515,11 +561,17 @@
                     
                 const safeData = JSON.parse(JSON.stringify(newData));
                 await setDoc(docRef, { data: safeData }, { merge: true });
-              } catch (e) { console.error("Firestore save error:", e); }
+                setTimeout(() => setSyncStatus('saved'), 500);
+              } catch (e) { 
+                  console.error("Firestore save error:", e); 
+                  setSyncStatus('error');
+              }
+            } else {
+                setSyncStatus('saved');
             }
           };
 
-          return [data, saveData, isLoaded];
+          return [data, saveData, isLoaded, syncStatus];
         };
 
         const fetchWithBackoff = async (url, options) => {
@@ -679,14 +731,30 @@
           useEffect(() => {
             const map = mapInstanceRef.current;
             if (!map || !window.L) return;
-            map.eachLayer((layer) => { if (layer instanceof window.L.Marker || layer instanceof window.L.Polyline) map.removeLayer(layer); });
+            
+            // 清除舊圖層
+            map.eachLayer((layer) => { 
+                if (layer instanceof window.L.Marker || layer instanceof window.L.Polyline) {
+                    map.removeLayer(layer); 
+                }
+            });
             markerRefs.current = {}; 
 
             if (visibleItems.length === 0) { map.setView([35.6895, 139.6917], 10); return; }
             
+            const routeGroups = {};
             const allLatlngs = [];
+
+            // 繪製標記
             visibleItems.forEach(m => {
               const pos = [m.lat, m.lng];
+              
+              // 收集路線座標
+              if (!routeGroups[m.routeKey]) {
+                  routeGroups[m.routeKey] = { color: m.routeColor, latlngs: [] };
+              }
+              routeGroups[m.routeKey].latlngs.push(pos);
+
               const markerSize = 38;
               const icon = window.L.divIcon({ 
                 className: 'custom-map-icon', 
@@ -710,6 +778,19 @@
                   }); 
               }
               allLatlngs.push(pos);
+            });
+
+            // 繪製虛線路徑
+            Object.values(routeGroups).forEach(group => {
+                if (group.latlngs.length > 1) {
+                    window.L.polyline(group.latlngs, {
+                        color: group.color,
+                        weight: 4,
+                        opacity: 0.6,
+                        dashArray: '10, 10', // 虛線效果
+                        lineJoin: 'round'
+                    }).addTo(map);
+                }
             });
 
             if (allLatlngs.length > 0) map.fitBounds(window.L.latLngBounds(allLatlngs), { padding: [50, 50] });
@@ -943,7 +1024,7 @@
           );
         };
 
-        // 🛑 EventCard: 加入 isReadOnly 判斷
+        // 🛑 EventCard: 加入自動圖片壓縮功能
         const EventCard = ({ data, onUpdate, isEditing, onDelete, onAutoCoords, isReadOnly, onMoveUp, onMoveDown, isFirst, isLast, onEditStart, onEditEnd }) => {
           const [isExpanded, setIsExpanded] = useState(false);
           const [isLocalEditing, setIsLocalEditing] = useState(false);
@@ -961,7 +1042,24 @@
 
           const handleSave = () => { const newSubItems = tempSubItems.split('/').map(t => t.trim()).filter(Boolean).map(t => ({ text: t, icon: 'star' })); onUpdate(data.id, { ...editData, subItems: newSubItems }); setIsLocalEditing(false); if(onEditEnd) onEditEnd(); };
           const handleAutoCoords = async () => { if(onAutoCoords) { setIsSearching(true); const query = (editData.location && editData.location !== "未設定") ? editData.location : editData.title; if (!query || query === "未設定" || query === "新項目") { onAutoCoords("ERROR_EMPTY_QUERY"); setIsSearching(false); return; } const coords = await onAutoCoords(query); setIsSearching(false); if(coords && coords.lat) { setEditData({...editData, lat: coords.lat, lng: coords.lng}); } } };
-          const handleImageUpload = (e) => { const files = Array.from(e.target.files); if (files.length > 0) { files.forEach(file => { const reader = new FileReader(); reader.onloadend = () => { setEditData(prev => ({ ...prev, images: [...(prev.images || []), reader.result] })); }; reader.readAsDataURL(file); }); } };
+          
+          // 🆕 圖片上傳 (套用壓縮)
+          const handleImageUpload = async (e) => { 
+              const files = Array.from(e.target.files); 
+              if (files.length > 0) { 
+                  const newImages = [];
+                  for (const file of files) {
+                      try {
+                          const compressedBase64 = await compressImage(file);
+                          newImages.push(compressedBase64);
+                      } catch (err) {
+                          console.error("Image compress failed", err);
+                      }
+                  }
+                  setEditData(prev => ({ ...prev, images: [...(prev.images || []), ...newImages] }));
+              } 
+          };
+
           const handleAddImageUrl = () => { if (newImageUrl.trim()) { setEditData(prev => ({ ...prev, images: [...(prev.images || []), newImageUrl.trim()] })); setNewImageUrl(""); setShowUrlInput(false); } };
           const removeImage = (idx) => { setEditData(prev => ({ ...prev, images: prev.images.filter((_, i) => i !== idx) })); };
           const [startTime, endTime] = (editData.time || '').split('-').map(s => s.trim());
@@ -1039,6 +1137,7 @@
           );
         };
         
+        // ... (MenuItemModal, MenuTranslator, ExpenseView, PackingView, InfoView remain same) ...
         const MenuItemModal = ({ item, initialQty = 1, initialOptions = [], onClose, onAdd, isOpen }) => {
             const [quantity, setQuantity] = useState(initialQty);
             const [options, setOptions] = useState([]);
@@ -1442,8 +1541,6 @@
             return null;
         };
 
-        const TranslationView = MenuTranslator;
-        
         const ExpenseView = ({ tripId, user }) => {
           const [members, setMembers] = useState(["我", "旅伴A"]);
           const [expenses, setExpenses, isLoaded] = usePersistentData('expenses', tripId, [], user);
@@ -1500,7 +1597,6 @@
           );
         };
 
-        // 🛑 修正：InfoView - 航班卡片標題現在可編輯了
         const InfoView = ({ tripId, user }) => {
           const [infos, setInfos, isLoaded] = usePersistentData('infos', tripId, DEFAULT_INFO_LIST, user);
           const [isEditing, setIsEditing] = useState(false);
@@ -1587,18 +1683,18 @@
 
         const HomeView = ({ trips, onSelectTrip, onAddTrip, onEditTrip, onDeleteTrip, onShareTrip, onJoinTrip, user }) => {
           const [showModal, setShowModal] = useState(false);
-          const [tripForm, setTripForm] = useState({ id: null, title: '', date: '' });
+          const [tripForm, setTripForm] = useState({ id: null, title: '', date: '', emoji: '✈️', cover: THEME_COLORS[0].value });
           const [joinCode, setJoinCode] = useState('');
           const [deleteConfirmId, setDeleteConfirmId] = useState(null);
           const [isJoining, setIsJoining] = useState(false);
 
-          const openCreateModal = () => { setTripForm({ id: null, title: '', date: '' }); setShowModal(true); };
-          const openEditModal = (trip) => { setTripForm({ id: trip.id, title: trip.title, date: trip.date }); setShowModal(true); };
+          const openCreateModal = () => { setTripForm({ id: null, title: '', date: '', emoji: '✈️', cover: THEME_COLORS[0].value }); setShowModal(true); };
+          const openEditModal = (trip) => { setTripForm({ id: trip.id, title: trip.title, date: trip.date, emoji: trip.emoji || '✈️', cover: trip.cover || THEME_COLORS[0].value }); setShowModal(true); };
 
           const handleSave = () => {
             if (tripForm.title) {
-              if (tripForm.id) { onEditTrip(tripForm.id, { title: tripForm.title, date: tripForm.date }); } 
-              else { onAddTrip({ title: tripForm.title, date: tripForm.date }); }
+              if (tripForm.id) { onEditTrip(tripForm.id, { title: tripForm.title, date: tripForm.date, emoji: tripForm.emoji, cover: tripForm.cover }); } 
+              else { onAddTrip({ title: tripForm.title, date: tripForm.date, emoji: tripForm.emoji, cover: tripForm.cover }); }
               setShowModal(false);
             }
           };
@@ -1638,7 +1734,45 @@
                   </div>
                 ))}
               </div>
-              {showModal && (<div className="fixed inset-0 bg-black/50 z-[2000] flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in" onClick={() => setShowModal(false)}><div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl" onClick={e => e.stopPropagation()}><h3 className="text-lg font-bold mb-4">{tripForm.id ? '編輯旅程' : '新增旅程'}</h3><div className="space-y-3 mb-6"><div><label className="text-xs font-bold text-stone-500 mb-1 block">名稱</label><input className="w-full border border-stone-200 p-2 rounded-lg text-sm font-bold" placeholder="旅程名稱" value={tripForm.title} onChange={e => setTripForm({...tripForm, title: e.target.value})} /></div><div><label className="text-xs font-bold text-stone-500 mb-1 block">日期</label><input className="w-full border border-stone-200 p-2 rounded-lg text-sm" placeholder="日期" value={tripForm.date} onChange={e => setTripForm({...tripForm, date: e.target.value})} /></div></div><div className="flex gap-2"><button onClick={() => setShowModal(false)} className="flex-1 py-2.5 border border-stone-200 rounded-xl text-stone-500 font-bold hover:bg-stone-50">取消</button><button onClick={handleSave} className="flex-1 py-2.5 bg-[#2b4f60] text-white rounded-xl font-bold shadow-lg">{tripForm.id ? '儲存' : '建立'}</button></div></div></div>)}
+              
+              {/* 🆕 編輯 Modal: 新增 Emoji 與 顏色選擇 */}
+              {showModal && (
+                  <div className="fixed inset-0 bg-black/50 z-[2000] flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in" onClick={() => setShowModal(false)}>
+                      <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl overflow-y-auto max-h-[90vh]" onClick={e => e.stopPropagation()}>
+                          <h3 className="text-lg font-bold mb-4">{tripForm.id ? '編輯旅程' : '新增旅程'}</h3>
+                          <div className="space-y-4 mb-6">
+                              <div><label className="text-xs font-bold text-stone-500 mb-1 block">名稱</label><input className="w-full border border-stone-200 p-2 rounded-lg text-sm font-bold" placeholder="旅程名稱" value={tripForm.title} onChange={e => setTripForm({...tripForm, title: e.target.value})} /></div>
+                              <div><label className="text-xs font-bold text-stone-500 mb-1 block">日期</label><input className="w-full border border-stone-200 p-2 rounded-lg text-sm" placeholder="日期" value={tripForm.date} onChange={e => setTripForm({...tripForm, date: e.target.value})} /></div>
+                              
+                              <div className="flex gap-4">
+                                  <div className="w-1/3">
+                                      <label className="text-xs font-bold text-stone-500 mb-1 block">圖示 (Emoji)</label>
+                                      <input className="w-full border border-stone-200 p-2 rounded-lg text-center text-xl" value={tripForm.emoji} onChange={e => setTripForm({...tripForm, emoji: e.target.value})} maxLength={2} />
+                                  </div>
+                                  <div className="flex-1">
+                                      <label className="text-xs font-bold text-stone-500 mb-1 block">封面風格</label>
+                                      <div className="flex flex-wrap gap-2">
+                                          {THEME_COLORS.map((color, idx) => (
+                                              <button 
+                                                  key={idx} 
+                                                  onClick={() => setTripForm({...tripForm, cover: color.value})}
+                                                  className={`w-8 h-8 rounded-full border-2 transition-all ${tripForm.cover === color.value ? 'border-stone-800 scale-110 shadow-md' : 'border-transparent hover:scale-105'}`}
+                                                  style={{ background: color.value }}
+                                                  title={color.name}
+                                              />
+                                          ))}
+                                      </div>
+                                  </div>
+                              </div>
+                          </div>
+                          <div className="flex gap-2">
+                              <button onClick={() => setShowModal(false)} className="flex-1 py-2.5 border border-stone-200 rounded-xl text-stone-500 font-bold hover:bg-stone-50">取消</button>
+                              <button onClick={handleSave} className="flex-1 py-2.5 bg-[#2b4f60] text-white rounded-xl font-bold shadow-lg">{tripForm.id ? '儲存' : '建立'}</button>
+                          </div>
+                      </div>
+                  </div>
+              )}
+              
               <Dialog isOpen={!!deleteConfirmId} title="刪除行程" message="確定要刪除這個行程嗎？此動作無法復原。" onConfirm={handleDeleteConfirm} onCancel={() => setDeleteConfirmId(null)} type="confirm" />
             </div>
           );
@@ -1646,12 +1780,13 @@
 
         const App = () => {
           const [user, setUser] = useState(null);
-          const [trips, setTrips] = usePersistentData('global', 'trips', TRIPS_DB, user, 'private');
-          const [privateItineraries, setPrivateItineraries] = usePersistentData('global', 'itineraries', { 'trip-2025-japan': INITIAL_ITINERARY_DATA }, user, 'private');
+          // 🆕 usePersistentData now returns syncStatus
+          const [trips, setTrips, isTripsLoaded, tripsSyncStatus] = usePersistentData('global', 'trips', TRIPS_DB, user, 'private');
+          const [privateItineraries, setPrivateItineraries, isItinLoaded, itinSyncStatus] = usePersistentData('global', 'itineraries', { 'trip-2025-japan': INITIAL_ITINERARY_DATA }, user, 'private');
           
           const [currentTripId, setCurrentTripId] = useState(null); 
           const currentTrip = trips.find(t => t.id === currentTripId);
-          const [isReadOnly, setIsReadOnly] = useState(false); // 🆕 唯讀模式狀態
+          const [isReadOnly, setIsReadOnly] = useState(false); 
 
           const [activeDay, setActiveDay] = useState(1);
           const [route, setRoute] = useState(null); 
@@ -1668,6 +1803,9 @@
           const [editingItemId, setEditingItemId] = useState(null); 
           const scrollRef = useRef(null);
 
+          // 🆕 全局同步狀態 (只要有任何一個在 saving 就是 saving)
+          const globalSyncStatus = (tripsSyncStatus === 'saving' || itinSyncStatus === 'saving') ? 'saving' : 'saved';
+
           // 🆕 網址參數偵測：自動進入分享模式
           useEffect(() => {
               const params = new URLSearchParams(window.location.search);
@@ -1675,7 +1813,7 @@
               if (shareId) {
                   handleJoinTrip(shareId, true); // true 表示唯讀加入
               }
-          }, [user]); // 確保 user init 後執行
+          }, [user]);
 
           useEffect(() => { const loader = document.getElementById('loader'); if (loader) { setTimeout(() => { loader.style.opacity = '0'; setTimeout(() => { loader.remove(); }, 500); }, 500); } }, []);
           useEffect(() => { const initAuth = async () => { if (!auth) return; onAuthStateChanged(auth, (u) => { if (u) { setUser(u); } else { signInAnonymously(auth).catch((e) => { console.log("Firebase Anonymously Error", e); }); } }); }; initAuth(); }, []);
@@ -1683,12 +1821,12 @@
           const itinerary = useMemo(() => { if (!currentTripId) return []; return privateItineraries[currentTripId] || (currentTripId === 'trip-2025-japan' ? INITIAL_ITINERARY_DATA : [{ day: 1, date: "Day 1", city: "未設定", title: "旅程開始", themeColor: "gray", timeline: [] }]); }, [privateItineraries, currentTripId]);
           const getActiveRouteKey = (day, currentRouteState) => { if (!day.hasRoutes) return null; const keys = Object.keys(day.routes); return (currentRouteState && day.routes[currentRouteState]) ? currentRouteState : keys[0]; };
 
-          const handleAddTrip = (newTrip) => { const dateStr = newTrip.date.replace(/\D/g, ''); const visitorCode = Math.random().toString(36).substring(2, 6).toUpperCase(); const id = `trip-${dateStr}-#${visitorCode}`; const trip = { id, title: newTrip.title, date: newTrip.date, cover: "linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)", emoji: "✈️", status: "planning", days: 1 }; setTrips([...trips, trip]); setPrivateItineraries({ ...privateItineraries, [id]: [{ day: 1, date: "Day 1", city: "城市", title: "旅程開始", themeColor: "gray", timeline: [] }] }); };
+          const handleAddTrip = (newTrip) => { const dateStr = newTrip.date.replace(/\D/g, ''); const visitorCode = Math.random().toString(36).substring(2, 6).toUpperCase(); const id = `trip-${dateStr}-#${visitorCode}`; const trip = { id, title: newTrip.title, date: newTrip.date, cover: newTrip.cover || THEME_COLORS[0].value, emoji: newTrip.emoji || "✈️", status: "planning", days: 1 }; setTrips([...trips, trip]); setPrivateItineraries({ ...privateItineraries, [id]: [{ day: 1, date: "Day 1", city: "城市", title: "旅程開始", themeColor: "gray", timeline: [] }] }); };
           const handleEditTrip = (id, updatedData) => { setTrips(trips.map(t => t.id === id ? { ...t, ...updatedData } : t)); };
           const handleDeleteTrip = (id) => { setTrips(trips.filter(t => t.id !== id)); const next = { ...privateItineraries }; delete next[id]; setPrivateItineraries(next); };
           const updateCurrentItinerary = (newItinerary) => { if(isReadOnly) return; setPrivateItineraries({ ...privateItineraries, [currentTripId]: newItinerary }); };
 
-          // 🆕 修正後的上傳連結函式 (增加了 'data' 層級以符合偶數路徑規則)
+          // ... (handleShareTrip, handleJoinTrip remain same) ...
           const handleShareTrip = async (tripId) => {
               if (!db) { alert("資料庫未連線"); return; }
               const tripMeta = trips.find(t => t.id === tripId);
@@ -1697,7 +1835,6 @@
               const confirmShare = confirm(`確定要產生「${tripMeta.title}」的分享連結嗎？\n資料將會上傳到雲端。`);
               if (!confirmShare) return;
               try {
-                  // 修正：路徑加長為6段 (artifacts / appId / public / data / shared_trips / tripId)
                   await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'shared_trips', tripId), { meta: tripMeta, data: tripData, updatedAt: new Date().toISOString() });
                   const shareUrl = `${window.location.origin}${window.location.pathname}?share=${tripId}`;
                   copyToClipboard(shareUrl);
@@ -1705,46 +1842,30 @@
               } catch (e) { console.error("Share Error", e); alert("發布失敗，請檢查網路。\n" + e.message); }
           };
 
-          // 🆕 修正後的加入行程函式 (配合新的路徑讀取)
           const handleJoinTrip = async (codeOrUrl, isViewOnly = false) => {
               let code = codeOrUrl;
-              // 簡單處理如果是貼上完整網址，嘗試取出 code
               if (codeOrUrl.includes('share=')) { code = new URLSearchParams(codeOrUrl.split('?')[1]).get('share'); }
               if (!code) return;
-              
-              // 檢查本地是否已有 (且不是唯讀模式下)
               if (!isViewOnly && trips.find(t => t.id === code)) { alert("您已經擁有此行程了。"); return; }
               if (!db) { alert("資料庫未連線"); return; }
-
               try {
-                  // 修正：路徑加長為6段，對應上面的 setDoc
                   const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'shared_trips', code);
                   const docSnap = await getDoc(docRef);
                   if (docSnap.exists) {
                       const { meta, data } = docSnap.data();
                       if (isViewOnly) {
-                          // 唯讀模式：不存入 trips，直接進入檢視
                           const viewId = `view-${code}`;
                           const viewTrip = { ...meta, id: viewId, title: `(檢視) ${meta.title}`, isReadOnly: true };
                           setPrivateItineraries(prev => ({ ...prev, [viewId]: data }));
-                          setTrips(prev => {
-                              const exists = prev.find(t => t.id === viewId);
-                              if (exists) return prev;
-                              return [...prev, viewTrip];
-                          });
-                          setIsReadOnly(true);
-                          setCurrentTripId(viewId);
+                          setTrips(prev => { const exists = prev.find(t => t.id === viewId); if (exists) return prev; return [...prev, viewTrip]; });
+                          setIsReadOnly(true); setCurrentTripId(viewId);
                           window.history.replaceState({}, document.title, window.location.pathname);
                       } else {
-                          // 協作模式 (目前程式碼架構下其實也是本地副本，除非實作即時同步)
                           setTrips(prev => [...prev, { ...meta, title: `(副本) ${meta.title}`, emoji: "📥" }]);
                           setPrivateItineraries(prev => ({ ...prev, [code]: data }));
                           alert(`🎉 下載成功：${meta.title}`);
                       }
-                  } else {
-                      if(isViewOnly) alert("❌ 連結失效或行程不存在。");
-                      else alert("❌ 找不到此行程代碼。");
-                  }
+                  } else { if(isViewOnly) alert("❌ 連結失效或行程不存在。"); else alert("❌ 找不到此行程代碼。"); }
               } catch (e) { console.error("Join Error", e); }
           };
 
@@ -1778,11 +1899,17 @@
               <div className="bg-[#FDFCF8]/90 backdrop-blur-md pt-12 px-4 pb-3 border-b border-stone-200 shrink-0 z-[1001] flex justify-between items-center shadow-sm">
                 <div className="flex items-center gap-2"><button onClick={() => {setCurrentTripId(null); setIsReadOnly(false);}} className="text-stone-400 hover:text-[#2b4f60] p-1 rounded-full hover:bg-stone-100 transition-colors"><ArrowLeft size={18} /></button><div className="text-sm font-bold tracking-widest text-[#2b4f60] py-2 font-serif flex items-center gap-2"><span className="text-[#B74B4B]">●</span> {currentTrip.title} {isReadOnly && <span className="bg-red-100 text-red-600 px-2 py-0.5 rounded text-[10px]">唯讀</span>}</div></div>
                 <div className="flex gap-2 items-center">
+                  {/* 🆕 自動上傳狀態顯示 */}
+                  <div className={`text-[10px] font-bold px-2 py-1 rounded-full transition-all flex items-center gap-1 ${globalSyncStatus === 'saving' ? 'bg-yellow-50 text-yellow-600' : 'bg-stone-50 text-stone-400'}`}>
+                      {globalSyncStatus === 'saving' ? <RotateCw size={10} className="animate-spin"/> : <CloudIcon size={10}/>}
+                      {globalSyncStatus === 'saving' ? '儲存中' : '已同步'}
+                  </div>
                   {view === 'itinerary' && <WeatherWidget city={currentData.city} initialCity={currentData.city} defaultLat={currentData.defaultLat} defaultLng={currentData.defaultLng} />}
                   <button onClick={() => setShowSettings(true)} className={`text-stone-400 hover:text-[#2b4f60] p-1 rounded-full transition-colors relative ${user?.isAnonymous ? 'bg-yellow-50 text-yellow-500 hover:text-yellow-600' : 'text-[#2b4f60]'}`}> <Settings size={18}/> </button>
                 </div>
               </div>
               
+              {/* ... (Main Content: LeafletMap, Itinerary View, etc.) ... */}
               <div className={`flex-1 overflow-y-auto bg-[#f4f4f0] relative z-10 scroll-smooth`}>
                   {view === 'itinerary' && (
                       <>
