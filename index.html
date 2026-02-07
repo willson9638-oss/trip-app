@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Trip App 2025 (Final Connected)</title>
+    <title>Trip App 2025 (Final Fix v2)</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -1688,7 +1688,7 @@
           const handleDeleteTrip = (id) => { setTrips(trips.filter(t => t.id !== id)); const next = { ...privateItineraries }; delete next[id]; setPrivateItineraries(next); };
           const updateCurrentItinerary = (newItinerary) => { if(isReadOnly) return; setPrivateItineraries({ ...privateItineraries, [currentTripId]: newItinerary }); };
 
-          // 🆕 上傳並產生連結
+          // 🆕 修正後的上傳連結函式 (增加了 'data' 層級以符合偶數路徑規則)
           const handleShareTrip = async (tripId) => {
               if (!db) { alert("資料庫未連線"); return; }
               const tripMeta = trips.find(t => t.id === tripId);
@@ -1697,14 +1697,15 @@
               const confirmShare = confirm(`確定要產生「${tripMeta.title}」的分享連結嗎？\n資料將會上傳到雲端。`);
               if (!confirmShare) return;
               try {
-                  await setDoc(doc(db, 'artifacts', appId, 'public', 'shared_trips', tripId), { meta: tripMeta, data: tripData, updatedAt: new Date().toISOString() });
+                  // 修正：路徑加長為6段 (artifacts / appId / public / data / shared_trips / tripId)
+                  await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'shared_trips', tripId), { meta: tripMeta, data: tripData, updatedAt: new Date().toISOString() });
                   const shareUrl = `${window.location.origin}${window.location.pathname}?share=${tripId}`;
                   copyToClipboard(shareUrl);
                   alert("✅ 連結已複製！\n您可以貼給朋友，他們將能以「唯讀模式」查看此行程。\n\n連結：" + shareUrl);
-              } catch (e) { console.error("Share Error", e); alert("發布失敗，請檢查網路。"); }
+              } catch (e) { console.error("Share Error", e); alert("發布失敗，請檢查網路。\n" + e.message); }
           };
 
-          // 🆕 加入/讀取行程 (支援唯讀模式)
+          // 🆕 修正後的加入行程函式 (配合新的路徑讀取)
           const handleJoinTrip = async (codeOrUrl, isViewOnly = false) => {
               let code = codeOrUrl;
               // 簡單處理如果是貼上完整網址，嘗試取出 code
@@ -1716,7 +1717,8 @@
               if (!db) { alert("資料庫未連線"); return; }
 
               try {
-                  const docRef = doc(db, 'artifacts', appId, 'public', 'shared_trips', code);
+                  // 修正：路徑加長為6段，對應上面的 setDoc
+                  const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'shared_trips', code);
                   const docSnap = await getDoc(docRef);
                   if (docSnap.exists) {
                       const { meta, data } = docSnap.data();
