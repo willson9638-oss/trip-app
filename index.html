@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Trip App 2025 (Actions)</title>
+    <title>Trip App 2025 (Final Connected)</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -49,9 +49,7 @@
         const { useState, useEffect, useRef, useMemo } = React;
         const { createPortal } = ReactDOM;
 
-        // ==========================================
-        // 🛠️ 圖標系統
-        // ==========================================
+        // ... (Icon definitions remain same) ...
         const FALLBACK_ICONS = {
             Pencil: [['path', { d: "M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" }]],
             Plus: [['path', { d: "M5 12h14" }], ['path', { d: "M12 5v14" }]],
@@ -262,13 +260,14 @@
 
         const apiKey = ""; 
 
+        // 🛑 這是您專屬的 Firebase 設定，已填入所有正確數值
         const YOUR_FIREBASE_CONFIG = {
-          apiKey: "", 
+          apiKey: "AIzaSyDQgzK_DZ70Fw5bYMT5oisxdcs9PoWC2jc", 
           authDomain: "trip-app-d63a2.firebaseapp.com",
           projectId: "trip-app-d63a2",
           storageBucket: "trip-app-d63a2.firebasestorage.app",
           messagingSenderId: "911454329161",
-          appId: ""  
+          appId: "1:911454329161:web:64d07a73ba2c15993a6298"
         };
 
         const getMapLink = (query) => `https://www.google.com/maps/search/?api=1&query=$?q=${encodeURIComponent(query || '')}`;
@@ -879,43 +878,32 @@
           );
         };
 
-        // 🛑 修正：FlightCard 加入上移下移按鈕
-        const FlightCard = ({ data, isEditing, onDelete, onUpdate, dragHandleProps, isLast, onEditStart, onEditEnd, onMoveUp, onMoveDown, isFirst }) => {
+        // 🛑 FlightCard: 加入 isReadOnly 判斷
+        const FlightCard = ({ data, isEditing, onDelete, onUpdate, isReadOnly, onMoveUp, onMoveDown, isFirst, isLast, onEditStart, onEditEnd }) => {
           const [isEditMode, setIsEditMode] = useState(false);
           const [editData, setEditData] = useState({ ...data });
           const handleSave = () => { onUpdate(data.id, editData); setIsEditMode(false); if(onEditEnd) onEditEnd(); };
-          const handleEditClick = () => { setIsEditMode(true); if(onEditStart) onEditStart(); };
-          const handleCancel = () => { setIsEditMode(false); if(onEditEnd) onEditEnd(); };
-
+          
           return (
               <div className="flex relative pl-4 pb-6 group">
                 {!isLast && <div className="absolute left-[35px] top-0 bottom-0 w-0.5 border-l-2 border-dashed border-stone-300 z-0"></div>}
-                
                 <div className="w-10 flex flex-col items-center mr-4 shrink-0 z-10 pt-1">
-                    <div className="w-[38px] h-[38px] rounded-full bg-blue-50 border-2 border-[#FDFCF8] shadow-sm flex items-center justify-center text-blue-500 relative z-10">
-                        {renderIconOrClass('plane', 20)}
-                    </div>
+                    <div className="w-[38px] h-[38px] rounded-full bg-blue-50 border-2 border-[#FDFCF8] shadow-sm flex items-center justify-center text-blue-500 relative z-10">{renderIconOrClass('plane', 20)}</div>
                 </div>
-
                 <div className="flex-1 bg-white rounded-xl shadow-sm border border-blue-100 overflow-hidden relative transition-all z-10">
                   <div className="h-1.5 w-full bg-gradient-to-r from-blue-400 to-blue-600"></div>
                   <div className="p-4">
                       {isEditMode ? (
-                        <div className="space-y-3"><div className="flex flex-col gap-2"><input className="flex-1 border rounded p-1.5 text-sm font-bold" value={editData.title} onChange={e=>setEditData({...editData, title:e.target.value})} placeholder="航班代號"/><input className="flex-1 border rounded p-1.5 text-sm" value={editData.airline} onChange={e=>setEditData({...editData, airline:e.target.value})} placeholder="航空公司"/></div><div className="grid grid-cols-2 gap-4 bg-stone-50 p-2 rounded-lg border border-stone-100"><div><label className="text-[10px] text-stone-400 font-bold block mb-1">DEPARTURE</label><input className="w-full border rounded p-1 text-xs mb-1" value={editData.depTime} onChange={e=>setEditData({...editData, depTime:e.target.value})} placeholder="時間"/><input className="w-full border rounded p-1 text-xs font-mono" value={editData.depLoc} onChange={e=>setEditData({...editData, depLoc:e.target.value})} placeholder="機場"/></div><div><label className="text-[10px] text-stone-400 font-bold block mb-1">ARRIVAL</label><input className="w-full border rounded p-1 text-xs mb-1" value={editData.arrTime} onChange={e=>setEditData({...editData, arrTime:e.target.value})} placeholder="時間"/><input className="w-full border rounded p-1 text-xs font-mono" value={editData.arrLoc} onChange={e=>setEditData({...editData, arrLoc:e.target.value})} placeholder="機場"/></div></div><div className="flex justify-end gap-2 pt-2"><button onClick={handleCancel} className="text-xs text-stone-500 px-3 py-1" onMouseDown={(e) => e.stopPropagation()}>取消</button><button onClick={handleSave} className="bg-blue-600 text-white text-xs px-4 py-1.5 rounded-lg shadow font-bold" onMouseDown={(e) => e.stopPropagation()}>儲存</button></div></div>
+                        <div className="space-y-3"><div className="flex flex-col gap-2"><input className="flex-1 border rounded p-1.5 text-sm font-bold" value={editData.title} onChange={e=>setEditData({...editData, title:e.target.value})} placeholder="航班代號"/><input className="flex-1 border rounded p-1.5 text-sm" value={editData.airline} onChange={e=>setEditData({...editData, airline:e.target.value})} placeholder="航空公司"/></div><div className="grid grid-cols-2 gap-4 bg-stone-50 p-2 rounded-lg border border-stone-100"><div><label className="text-[10px] text-stone-400 font-bold block mb-1">DEPARTURE</label><input className="w-full border rounded p-1 text-xs mb-1" value={editData.depTime} onChange={e=>setEditData({...editData, depTime:e.target.value})} placeholder="時間"/><input className="w-full border rounded p-1 text-xs font-mono" value={editData.depLoc} onChange={e=>setEditData({...editData, depLoc:e.target.value})} placeholder="機場"/></div><div><label className="text-[10px] text-stone-400 font-bold block mb-1">ARRIVAL</label><input className="w-full border rounded p-1 text-xs mb-1" value={editData.arrTime} onChange={e=>setEditData({...editData, arrTime:e.target.value})} placeholder="時間"/><input className="w-full border rounded p-1 text-xs font-mono" value={editData.arrLoc} onChange={e=>setEditData({...editData, arrLoc:e.target.value})} placeholder="機場"/></div></div><div className="flex justify-end gap-2 pt-2"><button onClick={()=>setIsEditMode(false)} className="text-xs text-stone-500 px-3 py-1">取消</button><button onClick={handleSave} className="bg-blue-600 text-white text-xs px-4 py-1.5 rounded-lg shadow font-bold">儲存</button></div></div>
                       ) : (
-                        <div className="flex flex-col"><div className="flex justify-between items-center mb-4"><div className="flex items-center gap-2"><div className="font-black text-lg text-stone-800">{editData.title}</div><div className="text-xs bg-blue-50 text-blue-600 px-2 py-0.5 rounded font-bold">{editData.airline}</div></div>
-                        <div className="text-stone-300">{renderIconOrClass('plane', 16)}</div>
-                        </div><div className="flex justify-between items-center px-2"><div className="text-center"><div className="text-2xl font-black text-stone-800 leading-none">{editData.depTime}</div><div className="text-sm font-bold text-stone-400 mt-1 font-mono tracking-wider">{editData.depLoc}</div></div><div className="flex-1 mx-4 flex flex-col items-center"><div className="w-full h-px bg-stone-300 relative flex justify-center mt-2 mb-2"><div className="absolute -top-3 text-blue-400 rotate-90 bg-white px-1">{renderIconOrClass('plane', 20)}</div></div></div><div className="text-center"><div className="text-2xl font-black text-stone-800 leading-none">{editData.arrTime}</div><div className="text-sm font-bold text-stone-400 mt-1 font-mono tracking-wider">{editData.arrLoc}</div></div></div></div>
+                        <div className="flex flex-col"><div className="flex justify-between items-center mb-4"><div className="flex items-center gap-2"><div className="font-black text-lg text-stone-800">{editData.title}</div><div className="text-xs bg-blue-50 text-blue-600 px-2 py-0.5 rounded font-bold">{editData.airline}</div></div><div className="text-stone-300">{renderIconOrClass('plane', 16)}</div></div><div className="flex justify-between items-center px-2"><div className="text-center"><div className="text-2xl font-black text-stone-800 leading-none">{editData.depTime}</div><div className="text-sm font-bold text-stone-400 mt-1 font-mono tracking-wider">{editData.depLoc}</div></div><div className="flex-1 mx-4 flex flex-col items-center"><div className="w-full h-px bg-stone-300 relative flex justify-center mt-2 mb-2"><div className="absolute -top-3 text-blue-400 rotate-90 bg-white px-1">{renderIconOrClass('plane', 20)}</div></div></div><div className="text-center"><div className="text-2xl font-black text-stone-800 leading-none">{editData.arrTime}</div><div className="text-sm font-bold text-stone-400 mt-1 font-mono tracking-wider">{editData.arrLoc}</div></div></div></div>
                       )}
                   </div>
-                  {isEditing && !isEditMode && (
+                  {isEditing && !isEditMode && !isReadOnly && (
                       <div className="flex gap-2 p-2 bg-stone-50 border-t border-stone-100 items-center">
-                          <button onClick={handleEditClick} onMouseDown={(e) => e.stopPropagation()} className="flex-1 bg-white border border-stone-200 text-stone-600 py-1.5 rounded text-xs font-bold flex items-center justify-center gap-1 hover:bg-stone-100"><Pencil size={12}/> 修改</button>
-                          <div className="flex gap-1 border-l border-stone-200 pl-2">
-                             <button onClick={onMoveUp} disabled={isFirst} className={`p-1.5 rounded border border-stone-200 ${isFirst ? 'bg-stone-50 text-stone-300' : 'bg-white text-stone-600 hover:bg-stone-100'}`}><ChevronUp size={14}/></button>
-                             <button onClick={onMoveDown} disabled={isLast} className={`p-1.5 rounded border border-stone-200 ${isLast ? 'bg-stone-50 text-stone-300' : 'bg-white text-stone-600 hover:bg-stone-100'}`}><ChevronDown size={14}/></button>
-                          </div>
-                          <button onClick={onDelete} onMouseDown={(e) => e.stopPropagation()} className="w-8 bg-white border border-red-100 text-red-500 py-1.5 rounded flex items-center justify-center hover:bg-red-50"><Trash2 size={12}/></button>
+                          <button onClick={()=>{setIsEditMode(true); if(onEditStart) onEditStart();}} className="flex-1 bg-white border border-stone-200 text-stone-600 py-1.5 rounded text-xs font-bold flex items-center justify-center gap-1 hover:bg-stone-100"><Pencil size={12}/> 修改</button>
+                          <div className="flex gap-1 border-l border-stone-200 pl-2"><button onClick={onMoveUp} disabled={isFirst} className={`p-1.5 rounded border border-stone-200 ${isFirst ? 'bg-stone-50 text-stone-300' : 'bg-white text-stone-600 hover:bg-stone-100'}`}><ChevronUp size={14}/></button><button onClick={onMoveDown} disabled={isLast} className={`p-1.5 rounded border border-stone-200 ${isLast ? 'bg-stone-50 text-stone-300' : 'bg-white text-stone-600 hover:bg-stone-100'}`}><ChevronDown size={14}/></button></div>
+                          <button onClick={onDelete} className="w-8 bg-white border border-red-100 text-red-500 py-1.5 rounded flex items-center justify-center hover:bg-red-50"><Trash2 size={12}/></button>
                       </div>
                   )}
                 </div>
@@ -923,67 +911,31 @@
           );
         };
 
-        // 🛑 修正：TransportCard 加入上移下移按鈕
-        const TransportCard = ({ data, isEditing, onDelete, onUpdate, dragHandleProps, isLast, onEditStart, onEditEnd, onMoveUp, onMoveDown, isFirst }) => {
+        // 🛑 TransportCard: 加入 isReadOnly 判斷
+        const TransportCard = ({ data, isEditing, onDelete, onUpdate, isReadOnly, onMoveUp, onMoveDown, isFirst, isLast, onEditStart, onEditEnd }) => {
           const IconComponent = ICON_MAP[data.icon] || Train;
           const [isEditMode, setIsEditMode] = useState(false);
           const [editData, setEditData] = useState({ ...data });
           const handleSave = () => { onUpdate(data.id, editData); setIsEditMode(false); if(onEditEnd) onEditEnd(); };
-          const handleEditClick = () => { setIsEditMode(true); if(onEditStart) onEditStart(); };
-          const handleCancel = () => { setIsEditMode(false); if(onEditEnd) onEditEnd(); };
-          
           const isWalk = data.icon === 'walk' || data.mode === 'walk';
 
           return (
             <div className="flex relative pl-4 pb-6 group">
               {!isLast && <div className="absolute left-[35px] top-0 bottom-0 w-0.5 border-l-2 border-dashed border-stone-300 z-0"></div>}
-              
               <div className="w-10 flex flex-col items-center mr-4 shrink-0 z-10 pt-1">
                   <div className="w-8 h-8 rounded-full bg-[#FDFCF8] border border-stone-200 shadow-sm flex items-center justify-center text-stone-400 relative z-10"><IconComponent size={14} /></div>
               </div>
               <div className={`flex-1 bg-[#F7F5F0] rounded p-3 border border-stone-100 text-sm flex flex-col relative transition-all z-10 ${isEditing ? 'border-dashed border-stone-300' : ''}`}>
                 {isEditMode ? (
-                  <div className="w-full space-y-2">
-                    <input className="w-full p-1 border rounded" value={editData.name} onChange={e=>setEditData({...editData, name:e.target.value})} placeholder="名稱"/>
-                    <div>
-                        <label className="text-[10px] text-stone-400 font-bold block mb-1">所需時間</label>
-                        <input type="text" className="w-full p-1 border rounded text-sm" value={editData.duration || ''} onChange={e=>setEditData({...editData, duration:e.target.value})} placeholder="例如 01:30" />
-                    </div>
-                    <div>
-                        <label className="text-[10px] text-stone-400 font-bold block mb-1">備註</label>
-                        <textarea className="w-full p-1 border rounded text-sm" rows={2} value={editData.desc || ''} onChange={e=>setEditData({...editData, desc:e.target.value})} placeholder="備註..." />
-                    </div>
-                    {!isWalk && (
-                        <input className="w-full p-1 border rounded" value={editData.cost} onChange={e=>setEditData({...editData, cost: e.target.value})} placeholder="費用 (例如: ¥2000)"/>
-                    )}
-                    <div className="flex justify-end gap-2 mt-2"><button onClick={handleCancel} className="text-stone-500 text-xs px-2 py-1" onMouseDown={(e) => e.stopPropagation()}>取消</button><button onClick={handleSave} className="bg-[#2b4f60] text-white text-xs px-3 py-1 rounded" onMouseDown={(e) => e.stopPropagation()}>儲存</button></div>
-                  </div>
+                  <div className="w-full space-y-2"><input className="w-full p-1 border rounded" value={editData.name} onChange={e=>setEditData({...editData, name:e.target.value})} placeholder="名稱"/><div><label className="text-[10px] text-stone-400 font-bold block mb-1">所需時間</label><input type="text" className="w-full p-1 border rounded text-sm" value={editData.duration || ''} onChange={e=>setEditData({...editData, duration:e.target.value})} placeholder="例如 01:30" /></div><div><label className="text-[10px] text-stone-400 font-bold block mb-1">備註</label><textarea className="w-full p-1 border rounded text-sm" rows={2} value={editData.desc || ''} onChange={e=>setEditData({...editData, desc:e.target.value})} placeholder="備註..." /></div>{!isWalk && (<input className="w-full p-1 border rounded" value={editData.cost} onChange={e=>setEditData({...editData, cost: e.target.value})} placeholder="費用 (例如: ¥2000)"/>)}<div className="flex justify-end gap-2 mt-2"><button onClick={()=>setIsEditMode(false)} className="text-stone-500 text-xs px-2 py-1">取消</button><button onClick={handleSave} className="bg-[#2b4f60] text-white text-xs px-3 py-1 rounded">儲存</button></div></div>
                 ) : (
-                  <div className="flex justify-between items-center w-full">
-                    <div>
-                        <div className="font-bold text-stone-700 flex items-center gap-2 font-serif">
-                            {data.name} 
-                            {data.duration && (
-                                <span className="text-[10px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded border border-blue-100 flex items-center gap-1 font-mono">
-                                    <Clock size={10}/> {data.duration}
-                                </span>
-                            )}
-                        </div>
-                        <div className="text-xs text-stone-500 mt-0.5">{String(data.desc || '')}</div>
-                    </div>
-                    {!isWalk && (
-                        <div className="text-right"><div className="font-bold text-stone-700 font-serif">{data.cost ? (typeof data.cost === 'number' ? data.cost.toLocaleString() : data.cost) : ''}</div></div>
-                    )}
-                  </div>
+                  <div className="flex justify-between items-center w-full"><div><div className="font-bold text-stone-700 flex items-center gap-2 font-serif">{data.name} {data.duration && (<span className="text-[10px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded border border-blue-100 flex items-center gap-1 font-mono"><Clock size={10}/> {data.duration}</span>)}</div><div className="text-xs text-stone-500 mt-0.5">{String(data.desc || '')}</div></div>{!isWalk && (<div className="text-right"><div className="font-bold text-stone-700 font-serif">{data.cost ? (typeof data.cost === 'number' ? data.cost.toLocaleString() : data.cost) : ''}</div></div>)}</div>
                 )}
-                {isEditing && !isEditMode && (
+                {isEditing && !isEditMode && !isReadOnly && (
                     <div className="flex gap-2 mt-3 pt-2 border-t border-stone-200/50 w-full items-center">
-                        <button onClick={handleEditClick} onMouseDown={(e) => e.stopPropagation()} className="flex-1 bg-white text-stone-600 border border-stone-200 py-1 rounded text-xs font-bold flex items-center justify-center gap-1 hover:bg-stone-50"><Pencil size={10}/> 修改</button>
-                        <div className="flex gap-1">
-                             <button onClick={onMoveUp} disabled={isFirst} className={`p-1 rounded border border-stone-200 ${isFirst ? 'bg-stone-50 text-stone-300' : 'bg-white text-stone-600 hover:bg-stone-100'}`}><ChevronUp size={10}/></button>
-                             <button onClick={onMoveDown} disabled={isLast} className={`p-1 rounded border border-stone-200 ${isLast ? 'bg-stone-50 text-stone-300' : 'bg-white text-stone-600 hover:bg-stone-100'}`}><ChevronDown size={10}/></button>
-                        </div>
-                        <button onClick={onDelete} onMouseDown={(e) => e.stopPropagation()} className="w-8 bg-white text-red-500 border border-stone-200 py-1 rounded flex items-center justify-center hover:bg-red-50"><Trash2 size={10}/></button>
+                        <button onClick={()=>{setIsEditMode(true); if(onEditStart) onEditStart();}} className="flex-1 bg-white text-stone-600 border border-stone-200 py-1 rounded text-xs font-bold flex items-center justify-center gap-1 hover:bg-stone-50"><Pencil size={10}/> 修改</button>
+                        <div className="flex gap-1"><button onClick={onMoveUp} disabled={isFirst} className={`p-1 rounded border border-stone-200 ${isFirst ? 'bg-stone-50 text-stone-300' : 'bg-white text-stone-600 hover:bg-stone-100'}`}><ChevronUp size={10}/></button><button onClick={onMoveDown} disabled={isLast} className={`p-1 rounded border border-stone-200 ${isLast ? 'bg-stone-50 text-stone-300' : 'bg-white text-stone-600 hover:bg-stone-100'}`}><ChevronDown size={10}/></button></div>
+                        <button onClick={onDelete} className="w-8 bg-white text-red-500 border border-stone-200 py-1 rounded flex items-center justify-center hover:bg-red-50"><Trash2 size={10}/></button>
                     </div>
                 )}
               </div>
@@ -991,8 +943,8 @@
           );
         };
 
-        // 🛑 修正：EventCard 加入上移下移按鈕
-        const EventCard = ({ data, onUpdate, isEditing, onDelete, onAutoCoords, dragHandleProps, isLast, onEditStart, onEditEnd, onMoveUp, onMoveDown, isFirst }) => {
+        // 🛑 EventCard: 加入 isReadOnly 判斷
+        const EventCard = ({ data, onUpdate, isEditing, onDelete, onAutoCoords, isReadOnly, onMoveUp, onMoveDown, isFirst, isLast, onEditStart, onEditEnd }) => {
           const [isExpanded, setIsExpanded] = useState(false);
           const [isLocalEditing, setIsLocalEditing] = useState(false);
           const [editData, setEditData] = useState({ ...data });
@@ -1004,170 +956,47 @@
           
           const isAirport = data.icon === 'airport';
 
-          if (data.type === 'flight') return <FlightCard data={data} isEditing={isEditing} onDelete={onDelete} onUpdate={onUpdate} dragHandleProps={dragHandleProps} isLast={isLast} onEditStart={onEditStart} onEditEnd={onEditEnd} onMoveUp={onMoveUp} onMoveDown={onMoveDown} isFirst={isFirst} />;
-          if (data.type === 'transport') return <TransportCard data={data} isEditing={isEditing} onDelete={onDelete} onUpdate={onUpdate} dragHandleProps={dragHandleProps} isLast={isLast} onEditStart={onEditStart} onEditEnd={onEditEnd} onMoveUp={onMoveUp} onMoveDown={onMoveDown} isFirst={isFirst} />;
+          if (data.type === 'flight') return <FlightCard data={data} isEditing={isEditing} onDelete={onDelete} onUpdate={onUpdate} isReadOnly={isReadOnly} isLast={isLast} onEditStart={onEditStart} onEditEnd={onEditEnd} onMoveUp={onMoveUp} onMoveDown={onMoveDown} isFirst={isFirst} />;
+          if (data.type === 'transport') return <TransportCard data={data} isEditing={isEditing} onDelete={onDelete} onUpdate={onUpdate} isReadOnly={isReadOnly} isLast={isLast} onEditStart={onEditStart} onEditEnd={onEditEnd} onMoveUp={onMoveUp} onMoveDown={onMoveDown} isFirst={isFirst} />;
 
-          const handleSave = () => { 
-              const newSubItems = tempSubItems.split('/').map(t => t.trim()).filter(Boolean).map(t => ({ text: t, icon: 'star' }));
-              onUpdate(data.id, { ...editData, subItems: newSubItems }); 
-              setIsLocalEditing(false); 
-              if(onEditEnd) onEditEnd();
-          };
-          
-          const handleEditClick = () => {
-              setTempSubItems(data.subItems ? data.subItems.map(i => i.text).join(" / ") : "");
-              setIsLocalEditing(true);
-              if(onEditStart) onEditStart();
-          };
-
-          const handleCancel = () => {
-              setEditData({...data});
-              setIsLocalEditing(false);
-              if(onEditEnd) onEditEnd();
-          };
-
-          const handleAutoCoords = async () => {
-              if(onAutoCoords) {
-                  setIsSearching(true);
-                  const query = (editData.location && editData.location !== "未設定") ? editData.location : editData.title;
-                  if (!query || query === "未設定" || query === "新項目") { onAutoCoords("ERROR_EMPTY_QUERY"); setIsSearching(false); return; }
-                  const coords = await onAutoCoords(query);
-                  setIsSearching(false);
-                  if(coords && coords.lat) { setEditData({...editData, lat: coords.lat, lng: coords.lng}); }
-              }
-          };
-
-          const handleImageUpload = (e) => {
-            const files = Array.from(e.target.files);
-            if (files.length > 0) {
-               files.forEach(file => {
-                   const reader = new FileReader();
-                   reader.onloadend = () => {
-                       setEditData(prev => ({ ...prev, images: [...(prev.images || []), reader.result] }));
-                   };
-                   reader.readAsDataURL(file);
-               });
-            }
-          };
-
-          const handleAddImageUrl = () => {
-            if (newImageUrl.trim()) {
-                setEditData(prev => ({ ...prev, images: [...(prev.images || []), newImageUrl.trim()] }));
-                setNewImageUrl("");
-                setShowUrlInput(false);
-            }
-          };
-
-          const removeImage = (idx) => {
-            setEditData(prev => ({ ...prev, images: prev.images.filter((_, i) => i !== idx) }));
-          };
-
-          const handleTimeChange = (type, val) => {
-              let [start, end] = (editData.time || '').split('-').map(s => s.trim());
-              if (type === 'start') start = val;
-              if (type === 'end') end = val;
-              setEditData({ ...editData, time: `${start || '00:00'}-${end || '00:00'}` });
-          };
-
+          const handleSave = () => { const newSubItems = tempSubItems.split('/').map(t => t.trim()).filter(Boolean).map(t => ({ text: t, icon: 'star' })); onUpdate(data.id, { ...editData, subItems: newSubItems }); setIsLocalEditing(false); if(onEditEnd) onEditEnd(); };
+          const handleAutoCoords = async () => { if(onAutoCoords) { setIsSearching(true); const query = (editData.location && editData.location !== "未設定") ? editData.location : editData.title; if (!query || query === "未設定" || query === "新項目") { onAutoCoords("ERROR_EMPTY_QUERY"); setIsSearching(false); return; } const coords = await onAutoCoords(query); setIsSearching(false); if(coords && coords.lat) { setEditData({...editData, lat: coords.lat, lng: coords.lng}); } } };
+          const handleImageUpload = (e) => { const files = Array.from(e.target.files); if (files.length > 0) { files.forEach(file => { const reader = new FileReader(); reader.onloadend = () => { setEditData(prev => ({ ...prev, images: [...(prev.images || []), reader.result] })); }; reader.readAsDataURL(file); }); } };
+          const handleAddImageUrl = () => { if (newImageUrl.trim()) { setEditData(prev => ({ ...prev, images: [...(prev.images || []), newImageUrl.trim()] })); setNewImageUrl(""); setShowUrlInput(false); } };
+          const removeImage = (idx) => { setEditData(prev => ({ ...prev, images: prev.images.filter((_, i) => i !== idx) })); };
           const [startTime, endTime] = (editData.time || '').split('-').map(s => s.trim());
+          const handleTimeChange = (type, val) => { let [s, e] = (editData.time || '').split('-').map(str => str.trim()); if (type === 'start') s = val; if (type === 'end') e = val; setEditData({ ...editData, time: `${s || '00:00'}-${e || '00:00'}` }); };
 
           return (
             <div className="flex relative pl-4 pb-6 group">
               {!isLast && <div className="absolute left-[35px] top-8 bottom-0 w-0.5 border-l-2 border-dashed border-stone-300 z-0"></div>}
-              
               <div className={`w-10 flex flex-col items-center mr-4 shrink-0 z-10 pt-1`}>
-                  <div className={`w-[38px] h-[38px] rounded-full shadow-sm flex items-center justify-center border-2 border-[#FDFCF8] relative z-10 ${getIconStyle(data.icon)}`}>
-                    {renderIconOrClass(data.icon, isAirport ? 22 : 14)}
-                  </div>
+                  <div className={`w-[38px] h-[38px] rounded-full shadow-sm flex items-center justify-center border-2 border-[#FDFCF8] relative z-10 ${getIconStyle(data.icon)}`}>{renderIconOrClass(data.icon, isAirport ? 22 : 14)}</div>
               </div>
-
               <div className={`flex-1 rounded-xl shadow-sm border bg-[#FDFCF8] overflow-hidden relative transition-all z-10 ${isLocalEditing ? 'ring-2 ring-[#2b4f60]/20' : ''} ${data.highlight ? 'border-[#B74B4B]/30' : 'border-stone-100'}`}>
                 <div className="p-4">
                   {isLocalEditing ? (
-                      <div className="space-y-2">
-                      <input className="w-full font-bold p-1 border rounded" value={editData.title} onChange={e=>setEditData({...editData, title: e.target.value})} placeholder="標題" />
-                      
-                      <div className="flex items-center gap-2">
-                          <div className="flex-1">
-                              <label className="text-[10px] text-stone-400 font-bold block mb-1">開始時間</label>
-                              <input type="time" className="w-full p-1 border rounded text-sm" value={startTime || ''} onChange={(e) => handleTimeChange('start', e.target.value)} />
-                          </div>
-                          <span className="text-stone-400 pt-4">-</span>
-                          <div className="flex-1">
-                              <label className="text-[10px] text-stone-400 font-bold block mb-1">結束時間</label>
-                              <input type="time" className="w-full p-1 border rounded text-sm" value={endTime || ''} onChange={(e) => handleTimeChange('end', e.target.value)} />
-                          </div>
-                      </div>
-
+                      <div className="space-y-2"><input className="w-full font-bold p-1 border rounded" value={editData.title} onChange={e=>setEditData({...editData, title: e.target.value})} placeholder="標題" />
+                      <div className="flex items-center gap-2"><div className="flex-1"><label className="text-[10px] text-stone-400 font-bold block mb-1">開始時間</label><input type="time" className="w-full p-1 border rounded text-sm" value={startTime || ''} onChange={(e) => handleTimeChange('start', e.target.value)} /></div><span className="text-stone-400 pt-4">-</span><div className="flex-1"><label className="text-[10px] text-stone-400 font-bold block mb-1">結束時間</label><input type="time" className="w-full p-1 border rounded text-sm" value={endTime || ''} onChange={(e) => handleTimeChange('end', e.target.value)} /></div></div>
                       <input className="w-full text-xs p-1 border rounded" value={editData.location} onChange={e=>setEditData({...editData, location: e.target.value})} placeholder="地點 (輸入完整以利 AI 搜尋)" />
                       <input className="w-full text-xs p-1 border rounded text-blue-600" value={editData.link || ''} onChange={e=>setEditData({...editData, link: e.target.value})} placeholder="相關連結 (URL)" />
                       <div className="flex gap-2"><input className="w-1/3 text-xs p-1 border rounded bg-stone-50" value={editData.lat || ''} onChange={e=>setEditData({...editData, lat: e.target.value})} placeholder="緯度" /><input className="w-1/3 text-xs p-1 border rounded bg-stone-50" value={editData.lng || ''} onChange={e=>setEditData({...editData, lng: e.target.value})} placeholder="經度" /><button onClick={handleAutoCoords} disabled={isSearching} onMouseDown={(e) => e.stopPropagation()} className="flex-1 px-2 bg-indigo-100 text-indigo-700 rounded text-xs whitespace-nowrap flex items-center justify-center gap-1 hover:bg-indigo-200 disabled:opacity-50 font-bold border border-indigo-200">{isSearching ? <Loader2 size={12} className="animate-spin"/> : <React.Fragment><Star size={12}/> AI 找座標</React.Fragment>}</button></div>
                       <textarea className="w-full text-sm p-1 border rounded" rows={3} value={editData.desc} onChange={e=>setEditData({...editData, desc: e.target.value})} placeholder="描述..." />
-                      
-                      <div className="bg-stone-50 p-2 rounded border border-stone-200">
-                          <div className="flex items-center gap-2 mb-2">
-                              <label className="cursor-pointer bg-white border border-stone-300 text-stone-600 px-2 py-1 rounded text-xs font-bold flex items-center gap-1 hover:bg-stone-100">
-                                  <input type="file" ref={fileInputRef} className="hidden" accept="image/*" multiple onChange={handleImageUpload} />
-                                  <Upload size={12} /> 相簿/檔案
-                              </label>
-                              <button onClick={() => setShowUrlInput(!showUrlInput)} className="bg-white border border-stone-300 text-stone-600 px-2 py-1 rounded text-xs font-bold flex items-center gap-1 hover:bg-stone-100">
-                                  <LinkIcon size={12} /> 圖片連結
-                              </button>
-                          </div>
-                          {showUrlInput && (
-                              <div className="flex gap-1 mb-2">
-                                  <input className="flex-1 text-xs border rounded p-1" value={newImageUrl} onChange={e=>setNewImageUrl(e.target.value)} placeholder="https://..." />
-                                  <button onClick={handleAddImageUrl} className="bg-blue-600 text-white px-2 rounded text-xs">加入</button>
-                              </div>
-                          )}
-                          {editData.images && editData.images.length > 0 && (
-                              <div className="flex gap-2 overflow-x-auto pb-1">
-                                  {editData.images.map((img, idx) => (
-                                      <div key={idx} className="relative shrink-0 w-16 h-16 group">
-                                          <img src={img} className="w-full h-full object-cover rounded border border-stone-200" />
-                                          <button onClick={() => removeImage(idx)} className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-0.5 shadow opacity-0 group-hover:opacity-100 transition-opacity"><X size={10} /></button>
-                                      </div>
-                                  ))}
-                              </div>
-                          )}
-                      </div>
-
+                      <div className="bg-stone-50 p-2 rounded border border-stone-200"><div className="flex items-center gap-2 mb-2"><label className="cursor-pointer bg-white border border-stone-300 text-stone-600 px-2 py-1 rounded text-xs font-bold flex items-center gap-1 hover:bg-stone-100"><input type="file" ref={fileInputRef} className="hidden" accept="image/*" multiple onChange={handleImageUpload} /><Upload size={12} /> 相簿/檔案</label><button onClick={() => setShowUrlInput(!showUrlInput)} className="bg-white border border-stone-300 text-stone-600 px-2 py-1 rounded text-xs font-bold flex items-center gap-1 hover:bg-stone-100"><LinkIcon size={12} /> 圖片連結</button></div>{showUrlInput && (<div className="flex gap-1 mb-2"><input className="flex-1 text-xs border rounded p-1" value={newImageUrl} onChange={e=>setNewImageUrl(e.target.value)} placeholder="https://..." /><button onClick={handleAddImageUrl} className="bg-blue-600 text-white px-2 rounded text-xs">加入</button></div>)}{editData.images && editData.images.length > 0 && (<div className="flex gap-2 overflow-x-auto pb-1">{editData.images.map((img, idx) => (<div key={idx} className="relative shrink-0 w-16 h-16 group"><img src={img} className="w-full h-full object-cover rounded border border-stone-200" /><button onClick={() => removeImage(idx)} className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-0.5 shadow opacity-0 group-hover:opacity-100 transition-opacity"><X size={10} /></button></div>))}</div>)}</div>
                       <div><label className="text-xs font-bold text-stone-500 mb-1 block ml-1">推薦/子項目 (用 / 分隔)</label><input className="w-full text-xs p-2 border rounded bg-stone-50" value={tempSubItems} onChange={(e) => setTempSubItems(e.target.value)} placeholder="例: 必吃布丁 / 買伴手禮 / 拍照點" /></div>
-                      <div className="flex justify-end gap-2 mt-2"><button onClick={handleCancel} className="text-stone-500 text-xs px-2 py-1" onMouseDown={(e) => e.stopPropagation()}>取消</button><button onClick={handleSave} className="bg-[#2b4f60] text-white text-xs px-3 py-1 rounded" onMouseDown={(e) => e.stopPropagation()}>儲存</button></div>
-                    </div>
+                      <div className="flex justify-end gap-2 mt-2"><button onClick={()=>setIsLocalEditing(false)} className="text-stone-500 text-xs px-2 py-1">取消</button><button onClick={handleSave} className="bg-[#2b4f60] text-white text-xs px-3 py-1 rounded">儲存</button></div></div>
                   ) : (
                     <React.Fragment>
-                      <div className="flex justify-between items-start mb-1">
-                          <div className="flex items-center gap-2">
-                             <span className="text-sm font-bold text-[#2b4f60] font-mono bg-stone-100 px-1.5 py-0.5 rounded">{data.time}</span>
-                             <h3 className={`font-bold text-base font-serif ${data.highlight ? 'text-[#B74B4B]' : 'text-[#2C3E50]'}`}>{String(data.title || '')}</h3>
-                          </div>
-                          <div className="flex items-center gap-2">
-                             {data.link && <a href={data.link} target="_blank" rel="noreferrer" className="text-stone-400 hover:text-blue-600 bg-stone-50 p-1 rounded-full"><LinkIcon size={14} /></a>}
-                             <a href={getMapLink(data.location)} target="_blank" className="text-stone-400 hover:text-blue-600 bg-stone-50 p-1 rounded-full"><Navigation size={14} /></a>
-                          </div>
-                      </div>
-                      <div className="text-xs text-stone-500 flex items-center gap-1 mb-3 ml-1"><MapPin size={10} /> {String(data.location || '')}</div>
-                      <p className="text-sm text-stone-600 leading-relaxed ml-1">{String(data.desc || '')}</p>
-                      
-                      {data.images && data.images.length > 0 && (
-                          <div className="mt-3 ml-1 flex gap-2 overflow-x-auto pb-2 no-scrollbar">
-                              {data.images.map((img, idx) => (
-                                  <img key={idx} src={img} className="h-20 w-auto rounded-lg shadow-sm border border-stone-100 object-cover cursor-pointer hover:scale-105 transition-transform" onClick={() => window.open(img, '_blank')} />
-                              ))}
-                          </div>
-                      )}
-
+                      <div className="flex justify-between items-start mb-1"><div className="flex items-center gap-2"><span className="text-sm font-bold text-[#2b4f60] font-mono bg-stone-100 px-1.5 py-0.5 rounded">{data.time}</span><h3 className={`font-bold text-base font-serif ${data.highlight ? 'text-[#B74B4B]' : 'text-[#2C3E50]'}`}>{String(data.title || '')}</h3></div><div className="flex items-center gap-2">{data.link && <a href={data.link} target="_blank" rel="noreferrer" className="text-stone-400 hover:text-blue-600 bg-stone-50 p-1 rounded-full"><LinkIcon size={14} /></a>}<a href={getMapLink(data.location)} target="_blank" className="text-stone-400 hover:text-blue-600 bg-stone-50 p-1 rounded-full"><Navigation size={14} /></a></div></div>
+                      <div className="text-xs text-stone-500 flex items-center gap-1 mb-3 ml-1"><MapPin size={10} /> {String(data.location || '')}</div><p className="text-sm text-stone-600 leading-relaxed ml-1">{String(data.desc || '')}</p>
+                      {data.images && data.images.length > 0 && (<div className="mt-3 ml-1 flex gap-2 overflow-x-auto pb-2 no-scrollbar">{data.images.map((img, idx) => (<img key={idx} src={img} className="h-20 w-auto rounded-lg shadow-sm border border-stone-100 object-cover cursor-pointer hover:scale-105 transition-transform" onClick={() => window.open(img, '_blank')} />))}</div>)}
                       {data.subItems && Array.isArray(data.subItems) && data.subItems.length > 0 && (<div className="mt-3 space-y-1.5 bg-[#F7F5F0] p-3 rounded-lg border border-stone-100"><div className="text-[10px] text-stone-400 font-bold mb-1 flex items-center gap-1"><Star size={10}/> 必吃必買推薦</div>{data.subItems.map((item, idx) => { const SubIcon = ICON_MAP[item.icon] || MapPin; return ( <div key={idx} className="flex items-center gap-2 text-xs text-stone-600 font-medium"><SubIcon size={12} className="text-[#B74B4B]" /> {String(item.text || '')}</div> ); })}</div>)}
                       <div className="flex justify-between items-center mt-2"><button onClick={() => setIsExpanded(!isExpanded)} className="text-[10px] text-[#2b4f60] font-bold hover:underline" onMouseDown={(e) => e.stopPropagation()}>{isExpanded ? '收起' : '詳細'}</button></div>
-                      {isEditing && (
+                      {isEditing && !isReadOnly && (
                           <div className="flex gap-2 mt-3 pt-3 border-t border-stone-100 items-center">
-                              <button onClick={handleEditClick} onMouseDown={(e) => e.stopPropagation()} className="flex-1 bg-stone-100 text-stone-600 py-1.5 rounded text-xs font-bold flex items-center justify-center gap-1 hover:bg-stone-200"><Pencil size={12}/> 修改</button>
-                              <div className="flex gap-1 border-l border-stone-200 pl-2">
-                                   <button onClick={onMoveUp} disabled={isFirst} className={`p-1.5 rounded border border-stone-200 ${isFirst ? 'bg-stone-50 text-stone-300' : 'bg-white text-stone-600 hover:bg-stone-100'}`}><ChevronUp size={14}/></button>
-                                   <button onClick={onMoveDown} disabled={isLast} className={`p-1.5 rounded border border-stone-200 ${isLast ? 'bg-stone-50 text-stone-300' : 'bg-white text-stone-600 hover:bg-stone-100'}`}><ChevronDown size={14}/></button>
-                              </div>
-                              <button onClick={onDelete} onMouseDown={(e) => e.stopPropagation()} className="w-8 bg-white text-red-500 border border-stone-200 py-1.5 rounded flex items-center justify-center hover:bg-red-200"><Trash2 size={12}/></button>
+                              <button onClick={()=>{setTempSubItems(data.subItems ? data.subItems.map(i => i.text).join(" / ") : ""); setIsLocalEditing(true); if(onEditStart) onEditStart();}} className="flex-1 bg-stone-100 text-stone-600 py-1.5 rounded text-xs font-bold flex items-center justify-center gap-1 hover:bg-stone-200"><Pencil size={12}/> 修改</button>
+                              <div className="flex gap-1 border-l border-stone-200 pl-2"><button onClick={onMoveUp} disabled={isFirst} className={`p-1.5 rounded border border-stone-200 ${isFirst ? 'bg-stone-50 text-stone-300' : 'bg-white text-stone-600 hover:bg-stone-100'}`}><ChevronUp size={14}/></button><button onClick={onMoveDown} disabled={isLast} className={`p-1.5 rounded border border-stone-200 ${isLast ? 'bg-stone-50 text-stone-300' : 'bg-white text-stone-600 hover:bg-stone-100'}`}><ChevronDown size={14}/></button></div>
+                              <button onClick={onDelete} className="w-8 bg-white text-red-500 border border-stone-200 py-1.5 rounded flex items-center justify-center hover:bg-red-200"><Trash2 size={12}/></button>
                           </div>
                       )}
                     </React.Fragment>
@@ -1209,8 +1038,6 @@
             </div>
           );
         };
-        
-        // ... (完整的 MenuTranslator, ExpenseView, PackingView, InfoView 程式碼)
         
         const MenuItemModal = ({ item, initialQty = 1, initialOptions = [], onClose, onAdd, isOpen }) => {
             const [quantity, setQuantity] = useState(initialQty);
@@ -1673,6 +1500,7 @@
           );
         };
 
+        // 🛑 修正：InfoView - 航班卡片標題現在可編輯了
         const InfoView = ({ tripId, user }) => {
           const [infos, setInfos, isLoaded] = usePersistentData('infos', tripId, DEFAULT_INFO_LIST, user);
           const [isEditing, setIsEditing] = useState(false);
@@ -1686,87 +1514,123 @@
             <div className="p-4 pb-24 animate-fade-in">
               <Dialog isOpen={!!deleteConfirmId} title="確認刪除" message="確定要刪除這條資訊嗎？" onConfirm={executeDelete} onCancel={() => setDeleteConfirmId(null)} type="confirm" />
               <div className="flex justify-between items-center mb-4"><h2 className="text-lg font-bold text-stone-700 flex items-center gap-2"><Info size={20} /> 實用資訊</h2><div className="flex gap-2"><button onClick={handleAdd} className="text-[#2b4f60] bg-stone-100 p-2 rounded-full"><Plus size={18}/></button><button onClick={() => setIsEditing(!isEditing)} className={`p-2 rounded-full ${isEditing ? 'bg-red-100 text-red-500' : 'bg-stone-100 text-stone-500'}`}><Pencil size={18}/></button></div></div>
-              <div className="space-y-4">{infos.map(info => { if (info.type === 'flight') { return ( <div key={info.id} className="bg-blue-50 border border-blue-100 rounded-xl p-4 relative group">{isEditing && (<button onClick={(e) => { e.stopPropagation(); confirmDelete(info.id); }} className="absolute top-2 right-2 text-red-400 p-1 hover:bg-red-50 rounded z-10"><X size={16}/></button>)}<div className="flex justify-between mb-2"><span className="font-bold text-blue-800">{info.title}</span><span className="text-xs bg-white px-2 py-0.5 rounded text-blue-600">{info.airline || '航班'}</span></div>{isEditing ? (<div className="space-y-1"><input className="w-full border p-1 text-sm" value={info.content} onChange={e=>handleUpdate(info.id, 'content', e.target.value)} /><input className="w-full border p-1 text-xs" value={info.sub} onChange={e=>handleUpdate(info.id, 'sub', e.target.value)} /></div>) : (<><div className="text-sm text-stone-700 font-mono">{info.content}</div><div className="text-xs text-stone-500 mt-1 border-t border-blue-100 pt-2">{info.sub}</div></>)}</div> ) } else if (info.type === 'rule') { return ( <div key={info.id} className="flex justify-between items-center text-sm p-3 bg-stone-50 rounded-xl border border-stone-100 relative">{isEditing && (<button onClick={(e) => { e.stopPropagation(); confirmDelete(info.id); }} className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-0.5 z-10"><X size={12}/></button>)}{isEditing ? (<div className="flex-1 space-y-1"><input className="w-full border p-1" value={info.title} onChange={e=>handleUpdate(info.id, 'title', e.target.value)} /><input className="w-full border p-1" value={info.content} onChange={e=>handleUpdate(info.id, 'content', e.target.value)} /></div>) : (<><span className="font-bold text-stone-700">{info.title}</span><span className={`text-xs px-2 py-1 rounded ${info.status === 'ok' ? 'bg-green-100 text-green-700' : info.status === 'warn' ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'}`}>{info.content}</span></>)}</div> ) } else { return ( <div key={info.id} className="bg-white p-4 rounded-xl shadow-sm border border-stone-200 relative">{isEditing && (<button onClick={(e) => { e.stopPropagation(); confirmDelete(info.id); }} className="absolute top-2 right-2 text-red-400 p-1 hover:bg-red-50 rounded z-10"><X size={16}/></button>)}<h3 className="font-bold text-stone-800 mb-1">{isEditing ? <input value={info.title} onChange={e=>handleUpdate(info.id, 'title', e.target.value)} className="border-b w-full"/> : info.title}</h3><div className="text-sm text-stone-600">{isEditing ? <textarea value={info.content} onChange={e=>handleUpdate(info.id, 'content', e.target.value)} className="w-full border rounded p-1"/> : info.content}</div><div className="text-xs text-stone-400 mt-1">{isEditing ? <input value={info.sub} onChange={e=>handleUpdate(info.id, 'sub', e.target.value)} className="w-full border-b"/> : info.sub}</div></div> ) } })}</div>
+              <div className="space-y-4">
+                {infos.map(info => { 
+                    if (info.type === 'flight') { 
+                        return ( 
+                            <div key={info.id} className="bg-blue-50 border border-blue-100 rounded-xl p-4 relative group">
+                                {isEditing && (<button onClick={(e) => { e.stopPropagation(); confirmDelete(info.id); }} className="absolute top-2 right-2 text-red-400 p-1 hover:bg-red-50 rounded z-10"><X size={16}/></button>)}
+                                <div className="flex justify-between mb-2 gap-2">
+                                    {isEditing ? (
+                                        <>
+                                            <input className="font-bold text-blue-800 bg-white border border-blue-200 rounded px-1 w-2/3" value={info.title} onChange={e => handleUpdate(info.id, 'title', e.target.value)} />
+                                            <input className="text-xs text-blue-600 bg-white border border-blue-200 rounded px-1 w-1/3 text-center" value={info.airline} onChange={e => handleUpdate(info.id, 'airline', e.target.value)} placeholder="航空公司" />
+                                        </>
+                                    ) : (
+                                        <>
+                                            <span className="font-bold text-blue-800">{info.title}</span>
+                                            <span className="text-xs bg-white px-2 py-0.5 rounded text-blue-600">{info.airline || '航班'}</span>
+                                        </>
+                                    )}
+                                </div>
+                                {isEditing ? (
+                                    <div className="space-y-1">
+                                        <input className="w-full border p-1 text-sm bg-white rounded" value={info.content} onChange={e=>handleUpdate(info.id, 'content', e.target.value)} />
+                                        <input className="w-full border p-1 text-xs bg-white rounded" value={info.sub} onChange={e=>handleUpdate(info.id, 'sub', e.target.value)} />
+                                    </div>
+                                ) : (
+                                    <>
+                                        <div className="text-sm text-stone-700 font-mono">{info.content}</div>
+                                        <div className="text-xs text-stone-500 mt-1 border-t border-blue-100 pt-2">{info.sub}</div>
+                                    </>
+                                )}
+                            </div> 
+                        ) 
+                    } else if (info.type === 'rule') { 
+                        return ( 
+                            <div key={info.id} className="flex justify-between items-center text-sm p-3 bg-stone-50 rounded-xl border border-stone-100 relative">
+                                {isEditing && (<button onClick={(e) => { e.stopPropagation(); confirmDelete(info.id); }} className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-0.5 z-10"><X size={12}/></button>)}
+                                {isEditing ? (
+                                    <div className="flex-1 space-y-1">
+                                        <input className="w-full border p-1 rounded" value={info.title} onChange={e=>handleUpdate(info.id, 'title', e.target.value)} />
+                                        <input className="w-full border p-1 rounded" value={info.content} onChange={e=>handleUpdate(info.id, 'content', e.target.value)} />
+                                    </div>
+                                ) : (
+                                    <>
+                                        <span className="font-bold text-stone-700">{info.title}</span>
+                                        <span className={`text-xs px-2 py-1 rounded ${info.status === 'ok' ? 'bg-green-100 text-green-700' : info.status === 'warn' ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'}`}>{info.content}</span>
+                                    </>
+                                )}
+                            </div> 
+                        ) 
+                    } else { 
+                        return ( 
+                            <div key={info.id} className="bg-white p-4 rounded-xl shadow-sm border border-stone-200 relative">
+                                {isEditing && (<button onClick={(e) => { e.stopPropagation(); confirmDelete(info.id); }} className="absolute top-2 right-2 text-red-400 p-1 hover:bg-red-50 rounded z-10"><X size={16}/></button>)}
+                                <h3 className="font-bold text-stone-800 mb-1">
+                                    {isEditing ? <input value={info.title} onChange={e=>handleUpdate(info.id, 'title', e.target.value)} className="border-b w-full"/> : info.title}
+                                </h3>
+                                <div className="text-sm text-stone-600">
+                                    {isEditing ? <textarea value={info.content} onChange={e=>handleUpdate(info.id, 'content', e.target.value)} className="w-full border rounded p-1"/> : info.content}
+                                </div>
+                                <div className="text-xs text-stone-400 mt-1">
+                                    {isEditing ? <input value={info.sub} onChange={e=>handleUpdate(info.id, 'sub', e.target.value)} className="w-full border-b"/> : info.sub}
+                                </div>
+                            </div> 
+                        ) 
+                    } 
+                })}
+              </div>
             </div>
           );
         };
 
-        // 🛑 修改：HomeView 新增編輯、分享、刪除按鈕
         const HomeView = ({ trips, onSelectTrip, onAddTrip, onEditTrip, onDeleteTrip, onShareTrip, onJoinTrip, user }) => {
           const [showModal, setShowModal] = useState(false);
           const [tripForm, setTripForm] = useState({ id: null, title: '', date: '' });
           const [joinCode, setJoinCode] = useState('');
           const [deleteConfirmId, setDeleteConfirmId] = useState(null);
+          const [isJoining, setIsJoining] = useState(false);
 
-          const openCreateModal = () => {
-             setTripForm({ id: null, title: '', date: '' });
-             setShowModal(true);
-          };
-
-          const openEditModal = (trip) => {
-             setTripForm({ id: trip.id, title: trip.title, date: trip.date });
-             setShowModal(true);
-          };
+          const openCreateModal = () => { setTripForm({ id: null, title: '', date: '' }); setShowModal(true); };
+          const openEditModal = (trip) => { setTripForm({ id: trip.id, title: trip.title, date: trip.date }); setShowModal(true); };
 
           const handleSave = () => {
             if (tripForm.title) {
-              if (tripForm.id) {
-                  onEditTrip(tripForm.id, { title: tripForm.title, date: tripForm.date });
-              } else {
-                  onAddTrip({ title: tripForm.title, date: tripForm.date });
-              }
+              if (tripForm.id) { onEditTrip(tripForm.id, { title: tripForm.title, date: tripForm.date }); } 
+              else { onAddTrip({ title: tripForm.title, date: tripForm.date }); }
               setShowModal(false);
             }
           };
           
-          const handleShare = (id) => {
-              copyToClipboard(id);
-              alert("已複製行程代碼: " + id);
-          };
-
-          const handleDeleteConfirm = () => {
-              if (deleteConfirmId) {
-                  onDeleteTrip(deleteConfirmId);
-                  setDeleteConfirmId(null);
-              }
-          };
+          const handleJoinClick = async () => { if(!joinCode) return; setIsJoining(true); await onJoinTrip(joinCode); setIsJoining(false); setJoinCode(''); };
+          const handleDeleteConfirm = () => { if (deleteConfirmId) { onDeleteTrip(deleteConfirmId); setDeleteConfirmId(null); } };
 
           return (
             <div className="min-h-screen bg-[#FDFCF8] p-6 pb-24">
               <div className="flex justify-between items-center mb-8 pt-4">
                 <h1 className="text-3xl font-black text-[#2b4f60] font-serif">My Trips</h1>
-                <div className="flex gap-2">
-                    <button onClick={openCreateModal} className="bg-[#2b4f60] text-white p-2 rounded-full shadow-lg hover:bg-[#1e3a8a] transition-all"><Plus size={24}/></button>
-                </div>
+                <div className="flex gap-2"><button onClick={openCreateModal} className="bg-[#2b4f60] text-white p-2 rounded-full shadow-lg hover:bg-[#1e3a8a] transition-all"><Plus size={24}/></button></div>
               </div>
-
               <div className="bg-white p-4 rounded-2xl shadow-sm border border-stone-200 mb-6">
-                  <h3 className="text-sm font-bold text-stone-500 mb-2 flex items-center gap-2"><Users size={14}/> 加入協作行程</h3>
+                  <h3 className="text-sm font-bold text-stone-500 mb-2 flex items-center gap-2"><Users size={14}/> 加入協作/分享行程</h3>
                   <div className="flex gap-2">
-                      <input 
-                          value={joinCode} 
-                          onChange={(e) => setJoinCode(e.target.value)} 
-                          placeholder="輸入行程代碼" 
-                          className="flex-1 bg-stone-50 border border-stone-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-[#2b4f60]"
-                      />
-                      <button onClick={() => onJoinTrip(joinCode)} className="bg-stone-800 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-black">加入</button>
+                      <input value={joinCode} onChange={(e) => setJoinCode(e.target.value)} placeholder="輸入代碼或貼上分享連結" className="flex-1 bg-stone-50 border border-stone-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-[#2b4f60]" />
+                      <button onClick={handleJoinClick} disabled={isJoining} className="bg-stone-800 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-black disabled:opacity-50 flex items-center gap-2">{isJoining && <Loader2 size={14} className="animate-spin"/>} 加入</button>
                   </div>
               </div>
-
               <div className="space-y-4">
                 {trips.map(trip => (
                   <div key={trip.id} onClick={() => onSelectTrip(trip.id)} className="bg-white rounded-2xl shadow-sm border border-stone-200 overflow-hidden cursor-pointer hover:shadow-md transition-all group relative">
                     <div className="h-24" style={{ background: trip.cover }}></div>
                     <div className="p-4 relative">
-                      <div className="absolute -top-8 left-4 w-12 h-12 bg-white rounded-xl shadow-sm flex items-center justify-center text-2xl border border-stone-100">
-                        {trip.emoji}
-                      </div>
+                      <div className="absolute -top-8 left-4 w-12 h-12 bg-white rounded-xl shadow-sm flex items-center justify-center text-2xl border border-stone-100">{trip.emoji}</div>
                       <div className="pl-14"><h3 className="font-bold text-lg text-stone-800 leading-tight mb-1">{trip.title}</h3><p className="text-xs text-stone-500 font-medium">{trip.date}</p></div>
                       <div className="mt-4 pt-3 border-t border-stone-100 flex justify-between items-center">
                           <div className="flex items-center gap-1 bg-stone-50 px-2 py-1 rounded text-xs text-stone-500 font-mono"><Key size={10} className="text-stone-400"/> {trip.id}</div>
                           <div className="flex gap-2">
                               <button onClick={(e) => { e.stopPropagation(); openEditModal(trip); }} className="text-stone-400 hover:text-[#2b4f60] p-1.5 rounded-full hover:bg-stone-50" title="編輯"><Pencil size={16}/></button>
-                              <button onClick={(e) => { e.stopPropagation(); handleShare(trip.id); }} className="text-stone-400 hover:text-green-600 p-1.5 rounded-full hover:bg-green-50" title="分享代碼"><Share2 size={16}/></button>
+                              <button onClick={(e) => { e.stopPropagation(); onShareTrip(trip.id); }} className="text-stone-400 hover:text-green-600 p-1.5 rounded-full hover:bg-green-50" title="複製分享連結"><LinkIcon size={16}/></button>
                               <button onClick={(e) => { e.stopPropagation(); setDeleteConfirmId(trip.id); }} className="text-stone-400 hover:text-red-500 p-1.5 rounded-full hover:bg-red-50" title="刪除"><Trash2 size={16}/></button>
                           </div>
                       </div>
@@ -1774,42 +1638,20 @@
                   </div>
                 ))}
               </div>
-
-              {showModal && (
-                <div className="fixed inset-0 bg-black/50 z-[2000] flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in" onClick={() => setShowModal(false)}>
-                  <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl" onClick={e => e.stopPropagation()}>
-                    <h3 className="text-lg font-bold mb-4">{tripForm.id ? '編輯旅程' : '新增旅程'}</h3>
-                    <div className="space-y-3 mb-6">
-                        <div>
-                            <label className="text-xs font-bold text-stone-500 mb-1 block">名稱</label>
-                            <input className="w-full border border-stone-200 p-2 rounded-lg text-sm font-bold" placeholder="旅程名稱 (例: 東京五日遊)" value={tripForm.title} onChange={e => setTripForm({...tripForm, title: e.target.value})} />
-                        </div>
-                        <div>
-                            <label className="text-xs font-bold text-stone-500 mb-1 block">日期</label>
-                            <input className="w-full border border-stone-200 p-2 rounded-lg text-sm" placeholder="日期 (例: 2025/07/01)" value={tripForm.date} onChange={e => setTripForm({...tripForm, date: e.target.value})} />
-                        </div>
-                    </div>
-                    <div className="flex gap-2">
-                      <button onClick={() => setShowModal(false)} className="flex-1 py-2.5 border border-stone-200 rounded-xl text-stone-500 font-bold hover:bg-stone-50">取消</button>
-                      <button onClick={handleSave} className="flex-1 py-2.5 bg-[#2b4f60] text-white rounded-xl font-bold shadow-lg">{tripForm.id ? '儲存' : '建立'}</button>
-                    </div>
-                  </div>
-                </div>
-              )}
-              
+              {showModal && (<div className="fixed inset-0 bg-black/50 z-[2000] flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in" onClick={() => setShowModal(false)}><div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl" onClick={e => e.stopPropagation()}><h3 className="text-lg font-bold mb-4">{tripForm.id ? '編輯旅程' : '新增旅程'}</h3><div className="space-y-3 mb-6"><div><label className="text-xs font-bold text-stone-500 mb-1 block">名稱</label><input className="w-full border border-stone-200 p-2 rounded-lg text-sm font-bold" placeholder="旅程名稱" value={tripForm.title} onChange={e => setTripForm({...tripForm, title: e.target.value})} /></div><div><label className="text-xs font-bold text-stone-500 mb-1 block">日期</label><input className="w-full border border-stone-200 p-2 rounded-lg text-sm" placeholder="日期" value={tripForm.date} onChange={e => setTripForm({...tripForm, date: e.target.value})} /></div></div><div className="flex gap-2"><button onClick={() => setShowModal(false)} className="flex-1 py-2.5 border border-stone-200 rounded-xl text-stone-500 font-bold hover:bg-stone-50">取消</button><button onClick={handleSave} className="flex-1 py-2.5 bg-[#2b4f60] text-white rounded-xl font-bold shadow-lg">{tripForm.id ? '儲存' : '建立'}</button></div></div></div>)}
               <Dialog isOpen={!!deleteConfirmId} title="刪除行程" message="確定要刪除這個行程嗎？此動作無法復原。" onConfirm={handleDeleteConfirm} onCancel={() => setDeleteConfirmId(null)} type="confirm" />
             </div>
           );
         };
-        
+
         const App = () => {
           const [user, setUser] = useState(null);
           const [trips, setTrips] = usePersistentData('global', 'trips', TRIPS_DB, user, 'private');
-          
           const [privateItineraries, setPrivateItineraries] = usePersistentData('global', 'itineraries', { 'trip-2025-japan': INITIAL_ITINERARY_DATA }, user, 'private');
           
           const [currentTripId, setCurrentTripId] = useState(null); 
           const currentTrip = trips.find(t => t.id === currentTripId);
+          const [isReadOnly, setIsReadOnly] = useState(false); // 🆕 唯讀模式狀態
 
           const [activeDay, setActiveDay] = useState(1);
           const [route, setRoute] = useState(null); 
@@ -1817,223 +1659,125 @@
           const [showAddModal, setShowAddModal] = useState(false);
           const [newEventData, setNewEventData] = useState({ type: 'event', title: '', iconType: 'food' });
           const [isEditingDay, setIsEditingDay] = useState(false);
-          
           const [isMapEditMode, setIsMapEditMode] = useState(false); 
           const [isTimelineEditMode, setIsTimelineEditMode] = useState(false); 
-          
           const [editDayData, setEditDayData] = useState({ title: '', date: '', city: '' });
-          
           const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, id: null, type: 'item' });
           const [mapEditDialog, setMapEditDialog] = useState({ isOpen: false, data: null }); 
-
           const [showSettings, setShowSettings] = useState(false);
           const [editingItemId, setEditingItemId] = useState(null); 
-          
           const scrollRef = useRef(null);
 
+          // 🆕 網址參數偵測：自動進入分享模式
           useEffect(() => {
-            const loader = document.getElementById('loader');
-            if (loader) {
-                setTimeout(() => {
-                    loader.style.opacity = '0'; 
-                    setTimeout(() => {
-                        loader.remove(); 
-                    }, 500); 
-                }, 500);
-            }
-          }, []);
+              const params = new URLSearchParams(window.location.search);
+              const shareId = params.get('share');
+              if (shareId) {
+                  handleJoinTrip(shareId, true); // true 表示唯讀加入
+              }
+          }, [user]); // 確保 user init 後執行
 
-          useEffect(() => { 
-              const initAuth = async () => { 
-                  if (!auth) return; 
-                  onAuthStateChanged(auth, (u) => {
-                      if (u) {
-                          setUser(u);
-                      } else {
-                          signInAnonymously(auth).catch((e) => {
-                               console.log("Firebase Anonymously Error", e);
-                          });
-                      }
-                  });
-              }; 
-              initAuth(); 
-          }, []);
+          useEffect(() => { const loader = document.getElementById('loader'); if (loader) { setTimeout(() => { loader.style.opacity = '0'; setTimeout(() => { loader.remove(); }, 500); }, 500); } }, []);
+          useEffect(() => { const initAuth = async () => { if (!auth) return; onAuthStateChanged(auth, (u) => { if (u) { setUser(u); } else { signInAnonymously(auth).catch((e) => { console.log("Firebase Anonymously Error", e); }); } }); }; initAuth(); }, []);
           
-          const itinerary = useMemo(() => { 
-              if (!currentTripId) return [];
-              return privateItineraries[currentTripId] || (currentTripId === 'trip-2025-japan' ? INITIAL_ITINERARY_DATA : [{ day: 1, date: "Day 1", city: "未設定", title: "旅程開始", themeColor: "gray", timeline: [] }]); 
-          }, [privateItineraries, currentTripId]);
-
+          const itinerary = useMemo(() => { if (!currentTripId) return []; return privateItineraries[currentTripId] || (currentTripId === 'trip-2025-japan' ? INITIAL_ITINERARY_DATA : [{ day: 1, date: "Day 1", city: "未設定", title: "旅程開始", themeColor: "gray", timeline: [] }]); }, [privateItineraries, currentTripId]);
           const getActiveRouteKey = (day, currentRouteState) => { if (!day.hasRoutes) return null; const keys = Object.keys(day.routes); return (currentRouteState && day.routes[currentRouteState]) ? currentRouteState : keys[0]; };
 
-          // 🛑 修改：行程代碼生成 (trip-YYYYMMDD-#CODE)
-          const handleAddTrip = (newTrip) => { 
-               const dateStr = newTrip.date.replace(/\D/g, ''); 
-               const visitorCode = Math.random().toString(36).substring(2, 6).toUpperCase();
-               const id = `trip-${dateStr}-#${visitorCode}`; 
-               const trip = { id, title: newTrip.title, date: newTrip.date, cover: "linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)", emoji: "✈️", status: "planning", days: 1 }; 
-               setTrips([...trips, trip]); 
-               setPrivateItineraries({ ...privateItineraries, [id]: [{ day: 1, date: "Day 1", city: "城市", title: "旅程開始", themeColor: "gray", timeline: [] }] }); 
-          };
-
+          const handleAddTrip = (newTrip) => { const dateStr = newTrip.date.replace(/\D/g, ''); const visitorCode = Math.random().toString(36).substring(2, 6).toUpperCase(); const id = `trip-${dateStr}-#${visitorCode}`; const trip = { id, title: newTrip.title, date: newTrip.date, cover: "linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)", emoji: "✈️", status: "planning", days: 1 }; setTrips([...trips, trip]); setPrivateItineraries({ ...privateItineraries, [id]: [{ day: 1, date: "Day 1", city: "城市", title: "旅程開始", themeColor: "gray", timeline: [] }] }); };
           const handleEditTrip = (id, updatedData) => { setTrips(trips.map(t => t.id === id ? { ...t, ...updatedData } : t)); };
           const handleDeleteTrip = (id) => { setTrips(trips.filter(t => t.id !== id)); const next = { ...privateItineraries }; delete next[id]; setPrivateItineraries(next); };
-          
-          const updateCurrentItinerary = (newItinerary) => { 
-                setPrivateItineraries({ ...privateItineraries, [currentTripId]: newItinerary }); 
-          };
-          
-          const handleAddDay = () => { const newDayNum = itinerary.length + 1; const newDay = { day: newDayNum, date: `Day ${newDayNum}`, city: "城市", title: "新的一天", themeColor: "gray", timeline: [] }; updateCurrentItinerary([...itinerary, newDay]); setActiveDay(newDayNum); };
-          const handleUpdateDayInfo = () => { const newItinerary = itinerary.map(d => d.day === activeDay ? { ...d, ...editDayData } : d); updateCurrentItinerary(newItinerary); setIsEditingDay(false); };
-          const handleEnableBranches = () => { const newItinerary = itinerary.map(d => { if (d.day !== activeDay) return d; return { ...d, hasRoutes: true, routes: { A: { name: "主要路線", icon: 'map', timeline: [...d.timeline] } }, timeline: [] }; }); updateCurrentItinerary(newItinerary); setRoute('A'); };
-          const handleAddRoute = () => { const day = itinerary.find(d => d.day === activeDay); if (!day) return; const existingKeys = Object.keys(day.routes || {}); const newKey = String.fromCharCode(65 + existingKeys.length); const newItinerary = itinerary.map(d => { if (d.day !== activeDay) return d; return { ...d, routes: { ...d.routes, [newKey]: { name: `新路線 ${newKey}`, icon: 'map', timeline: [] } } }; }); updateCurrentItinerary(newItinerary); setRoute(newKey); };
+          const updateCurrentItinerary = (newItinerary) => { if(isReadOnly) return; setPrivateItineraries({ ...privateItineraries, [currentTripId]: newItinerary }); };
 
-          const handleUpdateDayDate = (dayNum, newDate) => { const newItinerary = itinerary.map(d => d.day === dayNum ? { ...d, date: newDate } : d); updateCurrentItinerary(newItinerary); };
-          
-          const handleDeleteDay = (e, dayNum) => { e.stopPropagation(); if(itinerary.length <= 1) return; const newItinerary = itinerary.filter(d => d.day !== dayNum).map((d, idx) => ({ ...d, day: idx + 1, date: d.day > dayNum ? d.date : d.date })); updateCurrentItinerary(newItinerary); if(activeDay === dayNum) setActiveDay(1); else if(activeDay > dayNum) setActiveDay(activeDay - 1); };
-
-          const currentData = useMemo(() => { if (!itinerary.length) return null; const base = itinerary.find(d => d.day === activeDay); if (!base) return itinerary[0]; if (base.hasRoutes) { const routeKeys = Object.keys(base.routes); const currentRouteKey = (route && base.routes[route]) ? route : routeKeys[0]; const selectedRoute = base.routes[currentRouteKey] || { name: "Loading", timeline: [] }; return { ...base, title: selectedRoute.name, timeline: selectedRoute.timeline, city: selectedRoute.city || base.city }; } return base; }, [activeDay, route, itinerary]);
-          
-          useEffect(() => { if (scrollRef.current && view === 'itinerary') { const activeBtn = scrollRef.current.children[activeDay - 1]; if (activeBtn) activeBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' }); } }, [activeDay, view]);
-          
-          const handleAddItem = () => { 
-              let itemType = 'event'; 
-              if (newEventData.iconType === 'plane') { itemType = 'flight'; } 
-              else if (['train','bus','walk','taxi','ship','subway','bike','car'].includes(newEventData.iconType)) { itemType = 'transport'; } 
-              
-              const newItem = { id: `new-${Date.now()}`, type: itemType, time: "00:00", title: newEventData.title || (itemType === 'flight' ? "航班號" : "新項目"), location: "未設定", desc: "點擊編輯...", icon: newEventData.iconType, mode: newEventData.iconType, cost: 0, lat: null, lng: null, airline: itemType === 'flight' ? "航空公司" : undefined, depTime: itemType === 'flight' ? "10:00" : undefined, depLoc: itemType === 'flight' ? "TPE" : undefined, arrTime: itemType === 'flight' ? "14:00" : undefined, arrLoc: itemType === 'flight' ? "KIX" : undefined }; 
-              
-              const newItinerary = itinerary.map(day => { 
-                  if (day.day !== activeDay) return day; 
-                  if (day.hasRoutes) { 
-                      const currentRouteKey = getActiveRouteKey(day, route); 
-                      return { ...day, routes: { ...day.routes, [currentRouteKey]: { ...day.routes[currentRouteKey], timeline: [...day.routes[currentRouteKey].timeline, newItem] } } }; 
-                  } 
-                  return { ...day, timeline: [...day.timeline, newItem] }; 
-              }); 
-              
-              updateCurrentItinerary(newItinerary); 
-              setShowAddModal(false);
-
-              setEditingItemId(newItem.id);
-              setTimeout(() => {
-                  const el = document.getElementById(newItem.id);
-                  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-              }, 100);
-          };
-          
-          const handleHideEvent = (id) => { const newItinerary = itinerary.map(day => { if (day.day !== activeDay) return day; if (day.hasRoutes) { const currentKey = getActiveRouteKey(day, route); const newTimeline = day.routes[currentKey].timeline.map(t => t.id === id ? { ...t, hideOnMap: true } : t); return { ...day, routes: { ...day.routes, [currentKey]: { ...day.routes[currentKey], timeline: newTimeline } } }; } else { const newTimeline = day.timeline.map(t => t.id === id ? { ...t, hideOnMap: true } : t); return { ...day, timeline: newTimeline }; } }); updateCurrentItinerary(newItinerary); };
-          const handleRenameRoute = (key, newName) => { const newItinerary = itinerary.map(d => { if (d.day !== activeDay) return d; return { ...d, routes: { ...d.routes, [key]: { ...d.routes[key], name: newName } } }; }); updateCurrentItinerary(newItinerary); };
-          const handleDeleteRoute = (key) => { setConfirmDialog({ isOpen: true, id: key, type: 'route' }); };
-
-          const handleUpdateEvent = (id, newData) => {
-                const newItinerary = itinerary.map(day => {
-                    if (day.day !== activeDay) return day;
-                    if (day.hasRoutes) {
-                        const currentKey = getActiveRouteKey(day, route);
-                        const newTimeline = day.routes[currentKey].timeline.map(t => t.id === id ? { ...t, ...newData } : t);
-                        return { ...day, routes: { ...day.routes, [currentKey]: { ...day.routes[currentKey], timeline: newTimeline } } };
-                    }
-                    return { ...day, timeline: day.timeline.map(t => t.id === id ? { ...t, ...newData } : t) };
-                });
-                updateCurrentItinerary(newItinerary);
+          // 🆕 上傳並產生連結
+          const handleShareTrip = async (tripId) => {
+              if (!db) { alert("資料庫未連線"); return; }
+              const tripMeta = trips.find(t => t.id === tripId);
+              const tripData = privateItineraries[tripId];
+              if (!tripMeta || !tripData) { alert("找不到行程資料"); return; }
+              const confirmShare = confirm(`確定要產生「${tripMeta.title}」的分享連結嗎？\n資料將會上傳到雲端。`);
+              if (!confirmShare) return;
+              try {
+                  await setDoc(doc(db, 'artifacts', appId, 'public', 'shared_trips', tripId), { meta: tripMeta, data: tripData, updatedAt: new Date().toISOString() });
+                  const shareUrl = `${window.location.origin}${window.location.pathname}?share=${tripId}`;
+                  copyToClipboard(shareUrl);
+                  alert("✅ 連結已複製！\n您可以貼給朋友，他們將能以「唯讀模式」查看此行程。\n\n連結：" + shareUrl);
+              } catch (e) { console.error("Share Error", e); alert("發布失敗，請檢查網路。"); }
           };
 
-          const handleMarkerDrag = (id, lat, lng) => {
-                const itemToUpdate = currentData.timeline.find(t => t.id === id);
-                if (itemToUpdate) {
-                    handleUpdateEvent(id, { lat, lng });
-                }
-          };
-
-          const fetchCoordinates = async (query) => {
-                const coords = await smartGeocode(query, apiKey);
-                return coords;
-          };
-
-          // 🛑 修改：實現上移下移邏輯
-          const handleMoveItem = (itemId, direction) => {
-               const newItinerary = itinerary.map(d => {
-                   if (d.day !== activeDay) return d;
-                   const swap = (list) => {
-                       const idx = list.findIndex(t => t.id === itemId);
-                       if (idx === -1) return list;
-                       const targetIdx = idx + direction;
-                       if (targetIdx < 0 || targetIdx >= list.length) return list; // Out of bounds
-                       
-                       const newList = [...list];
-                       // Swap
-                       const temp = newList[idx];
-                       newList[idx] = newList[targetIdx];
-                       newList[targetIdx] = temp;
-                       return newList;
-                   };
-
-                   if (d.hasRoutes) {
-                       const currentKey = getActiveRouteKey(d, route);
-                       return { ...d, routes: { ...d.routes, [currentKey]: { ...d.routes[currentKey], timeline: swap(d.routes[currentKey].timeline) } } };
-                   }
-                   return { ...d, timeline: swap(d.timeline) };
-               });
-               updateCurrentItinerary(newItinerary);
-          };
-
-          const confirmDelete = (id) => {
-              setConfirmDialog({ isOpen: true, id, type: 'item' });
-          };
-
-          const executeDelete = () => { 
-              const id = confirmDialog.id; 
-              if (!id) return; 
-              
-              const newItinerary = itinerary.map(day => { 
-                  if (day.day !== activeDay) return day; 
-                  if (confirmDialog.type === 'route') { 
-                      const newRoutes = { ...day.routes }; 
-                      delete newRoutes[id]; 
-                      return { ...day, hasRoutes: Object.keys(newRoutes).length > 0, routes: newRoutes }; 
-                  } 
-                  if (day.hasRoutes) { 
-                      const keys = Object.keys(day.routes); 
-                      const newRoutes = {}; 
-                      keys.forEach(k => { 
-                          newRoutes[k] = { ...day.routes[k], timeline: day.routes[k].timeline.filter(t => t.id !== id) }; 
-                      }); 
-                      return { ...day, routes: newRoutes }; 
-                  } 
-                  return { ...day, timeline: day.timeline.filter(t => t.id !== id) }; 
-              }); 
-              
-              updateCurrentItinerary(newItinerary); 
-              if (confirmDialog.type === 'route' && route === id) { setRoute(null); } 
-              setConfirmDialog({ isOpen: false, id: null, type: 'item' }); 
-          };
-          
-          const handleJoinTrip = async (code) => {
+          // 🆕 加入/讀取行程 (支援唯讀模式)
+          const handleJoinTrip = async (codeOrUrl, isViewOnly = false) => {
+              let code = codeOrUrl;
+              // 簡單處理如果是貼上完整網址，嘗試取出 code
+              if (codeOrUrl.includes('share=')) { code = new URLSearchParams(codeOrUrl.split('?')[1]).get('share'); }
               if (!code) return;
-              if (trips.find(t => t.id === code)) { alert("您已經擁有此行程了。"); return; }
-              const newTrip = { id: code, title: "(協作) 新行程", date: "未設定", emoji: "🤝", cover: "linear-gradient(135deg, #FF9966 0%, #FF5E62 100%)", status: "planning" };
-              setTrips([...trips, newTrip]);
+              
+              // 檢查本地是否已有 (且不是唯讀模式下)
+              if (!isViewOnly && trips.find(t => t.id === code)) { alert("您已經擁有此行程了。"); return; }
+              if (!db) { alert("資料庫未連線"); return; }
+
+              try {
+                  const docRef = doc(db, 'artifacts', appId, 'public', 'shared_trips', code);
+                  const docSnap = await getDoc(docRef);
+                  if (docSnap.exists) {
+                      const { meta, data } = docSnap.data();
+                      if (isViewOnly) {
+                          // 唯讀模式：不存入 trips，直接進入檢視
+                          const viewId = `view-${code}`;
+                          const viewTrip = { ...meta, id: viewId, title: `(檢視) ${meta.title}`, isReadOnly: true };
+                          setPrivateItineraries(prev => ({ ...prev, [viewId]: data }));
+                          setTrips(prev => {
+                              const exists = prev.find(t => t.id === viewId);
+                              if (exists) return prev;
+                              return [...prev, viewTrip];
+                          });
+                          setIsReadOnly(true);
+                          setCurrentTripId(viewId);
+                          window.history.replaceState({}, document.title, window.location.pathname);
+                      } else {
+                          // 協作模式 (目前程式碼架構下其實也是本地副本，除非實作即時同步)
+                          setTrips(prev => [...prev, { ...meta, title: `(副本) ${meta.title}`, emoji: "📥" }]);
+                          setPrivateItineraries(prev => ({ ...prev, [code]: data }));
+                          alert(`🎉 下載成功：${meta.title}`);
+                      }
+                  } else {
+                      if(isViewOnly) alert("❌ 連結失效或行程不存在。");
+                      else alert("❌ 找不到此行程代碼。");
+                  }
+              } catch (e) { console.error("Join Error", e); }
           };
 
-          if (!currentTripId) { return ( <HomeView trips={trips} onSelectTrip={(id)=>{ setCurrentTripId(id); setActiveDay(1); }} onAddTrip={handleAddTrip} onEditTrip={handleEditTrip} onDeleteTrip={handleDeleteTrip} onShareTrip={()=>{}} onJoinTrip={handleJoinTrip} user={user} /> ); }
+          const handleAddDay = () => { if(isReadOnly) return; const newDayNum = itinerary.length + 1; const newDay = { day: newDayNum, date: `Day ${newDayNum}`, city: "城市", title: "新的一天", themeColor: "gray", timeline: [] }; updateCurrentItinerary([...itinerary, newDay]); setActiveDay(newDayNum); };
+          const handleUpdateDayInfo = () => { if(isReadOnly) return; const newItinerary = itinerary.map(d => d.day === activeDay ? { ...d, ...editDayData } : d); updateCurrentItinerary(newItinerary); setIsEditingDay(false); };
+          const handleEnableBranches = () => { if(isReadOnly) return; const newItinerary = itinerary.map(d => { if (d.day !== activeDay) return d; return { ...d, hasRoutes: true, routes: { A: { name: "主要路線", icon: 'map', timeline: [...d.timeline] } }, timeline: [] }; }); updateCurrentItinerary(newItinerary); setRoute('A'); };
+          const handleAddRoute = () => { if(isReadOnly) return; const day = itinerary.find(d => d.day === activeDay); if (!day) return; const existingKeys = Object.keys(day.routes || {}); const newKey = String.fromCharCode(65 + existingKeys.length); const newItinerary = itinerary.map(d => { if (d.day !== activeDay) return d; return { ...d, routes: { ...d.routes, [newKey]: { name: `新路線 ${newKey}`, icon: 'map', timeline: [] } } }; }); updateCurrentItinerary(newItinerary); setRoute(newKey); };
+          const handleUpdateDayDate = (dayNum, newDate) => { if(isReadOnly) return; const newItinerary = itinerary.map(d => d.day === dayNum ? { ...d, date: newDate } : d); updateCurrentItinerary(newItinerary); };
+          const handleDeleteDay = (e, dayNum) => { if(isReadOnly) return; e.stopPropagation(); if(itinerary.length <= 1) return; const newItinerary = itinerary.filter(d => d.day !== dayNum).map((d, idx) => ({ ...d, day: idx + 1, date: d.day > dayNum ? d.date : d.date })); updateCurrentItinerary(newItinerary); if(activeDay === dayNum) setActiveDay(1); else if(activeDay > dayNum) setActiveDay(activeDay - 1); };
           
-          if (!currentData && itinerary.length > 0) {
-              setActiveDay(itinerary[0].day);
-              return <div className="p-10 text-center"><Loader2 className="animate-spin w-8 h-8 mx-auto mb-2 text-[#2b4f60]"/>載入中...</div>;
-          }
+          const currentData = useMemo(() => { if (!itinerary.length) return null; const base = itinerary.find(d => d.day === activeDay); if (!base) return itinerary[0]; if (base.hasRoutes) { const routeKeys = Object.keys(base.routes); const currentRouteKey = (route && base.routes[route]) ? route : routeKeys[0]; const selectedRoute = base.routes[currentRouteKey] || { name: "Loading", timeline: [] }; return { ...base, title: selectedRoute.name, timeline: selectedRoute.timeline, city: selectedRoute.city || base.city }; } return base; }, [activeDay, route, itinerary]);
+          useEffect(() => { if (scrollRef.current && view === 'itinerary') { const activeBtn = scrollRef.current.children[activeDay - 1]; if (activeBtn) activeBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' }); } }, [activeDay, view]);
+          const handleAddItem = () => { if(isReadOnly) return; let itemType = 'event'; if (newEventData.iconType === 'plane') { itemType = 'flight'; } else if (['train','bus','walk','taxi','ship','subway','bike','car'].includes(newEventData.iconType)) { itemType = 'transport'; } const newItem = { id: `new-${Date.now()}`, type: itemType, time: "00:00", title: newEventData.title || (itemType === 'flight' ? "航班號" : "新項目"), location: "未設定", desc: "點擊編輯...", icon: newEventData.iconType, mode: newEventData.iconType, cost: 0, lat: null, lng: null, airline: itemType === 'flight' ? "航空公司" : undefined, depTime: itemType === 'flight' ? "10:00" : undefined, depLoc: itemType === 'flight' ? "TPE" : undefined, arrTime: itemType === 'flight' ? "14:00" : undefined, arrLoc: itemType === 'flight' ? "KIX" : undefined }; const newItinerary = itinerary.map(day => { if (day.day !== activeDay) return day; if (day.hasRoutes) { const currentRouteKey = getActiveRouteKey(day, route); return { ...day, routes: { ...day.routes, [currentRouteKey]: { ...day.routes[currentRouteKey], timeline: [...day.routes[currentRouteKey].timeline, newItem] } } }; } return { ...day, timeline: [...day.timeline, newItem] }; }); updateCurrentItinerary(newItinerary); setShowAddModal(false); setEditingItemId(newItem.id); setTimeout(() => { const el = document.getElementById(newItem.id); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 100); };
+          const handleHideEvent = (id) => { if(isReadOnly) return; const newItinerary = itinerary.map(day => { if (day.day !== activeDay) return day; if (day.hasRoutes) { const currentKey = getActiveRouteKey(day, route); const newTimeline = day.routes[currentKey].timeline.map(t => t.id === id ? { ...t, hideOnMap: true } : t); return { ...day, routes: { ...day.routes, [currentKey]: { ...day.routes[currentKey], timeline: newTimeline } } }; } else { const newTimeline = day.timeline.map(t => t.id === id ? { ...t, hideOnMap: true } : t); return { ...day, timeline: newTimeline }; } }); updateCurrentItinerary(newItinerary); };
+          const handleRenameRoute = (key, newName) => { if(isReadOnly) return; const newItinerary = itinerary.map(d => { if (d.day !== activeDay) return d; return { ...d, routes: { ...d.routes, [key]: { ...d.routes[key], name: newName } } }; }); updateCurrentItinerary(newItinerary); };
+          const handleDeleteRoute = (key) => { if(isReadOnly) return; setConfirmDialog({ isOpen: true, id: key, type: 'route' }); };
+          const handleUpdateEvent = (id, newData) => { if(isReadOnly) return; const newItinerary = itinerary.map(day => { if (day.day !== activeDay) return day; if (day.hasRoutes) { const currentKey = getActiveRouteKey(day, route); const newTimeline = day.routes[currentKey].timeline.map(t => t.id === id ? { ...t, ...newData } : t); return { ...day, routes: { ...day.routes, [currentKey]: { ...day.routes[currentKey], timeline: newTimeline } } }; } return { ...day, timeline: day.timeline.map(t => t.id === id ? { ...t, ...newData } : t) }; }); updateCurrentItinerary(newItinerary); };
+          const handleMarkerDrag = (id, lat, lng) => { if(isReadOnly) return; const itemToUpdate = currentData.timeline.find(t => t.id === id); if (itemToUpdate) { handleUpdateEvent(id, { lat, lng }); } };
+          const fetchCoordinates = async (query) => { const coords = await smartGeocode(query, apiKey); return coords; };
+          const handleMoveItem = (itemId, direction) => { if(isReadOnly) return; const newItinerary = itinerary.map(d => { if (d.day !== activeDay) return d; const swap = (list) => { const idx = list.findIndex(t => t.id === itemId); if (idx === -1) return list; const targetIdx = idx + direction; if (targetIdx < 0 || targetIdx >= list.length) return list; const newList = [...list]; const temp = newList[idx]; newList[idx] = newList[targetIdx]; newList[targetIdx] = temp; return newList; }; if (d.hasRoutes) { const currentKey = getActiveRouteKey(d, route); return { ...d, routes: { ...d.routes, [currentKey]: { ...d.routes[currentKey], timeline: swap(d.routes[currentKey].timeline) } } }; } return { ...d, timeline: swap(d.timeline) }; }); updateCurrentItinerary(newItinerary); };
+          const confirmDelete = (id) => { if(isReadOnly) return; setConfirmDialog({ isOpen: true, id, type: 'item' }); };
+          const executeDelete = () => { if(isReadOnly) return; const id = confirmDialog.id; if (!id) return; const newItinerary = itinerary.map(day => { if (day.day !== activeDay) return day; if (confirmDialog.type === 'route') { const newRoutes = { ...day.routes }; delete newRoutes[id]; return { ...day, hasRoutes: Object.keys(newRoutes).length > 0, routes: newRoutes }; } if (day.hasRoutes) { const keys = Object.keys(day.routes); const newRoutes = {}; keys.forEach(k => { newRoutes[k] = { ...day.routes[k], timeline: day.routes[k].timeline.filter(t => t.id !== id) }; }); return { ...day, routes: newRoutes }; } return { ...day, timeline: day.timeline.filter(t => t.id !== id) }; }); updateCurrentItinerary(newItinerary); if (confirmDialog.type === 'route' && route === id) { setRoute(null); } setConfirmDialog({ isOpen: false, id: null, type: 'item' }); };
+          
+          if (!currentTripId) { return ( <HomeView trips={trips} onSelectTrip={(id)=>{ setIsReadOnly(false); setCurrentTripId(id); setActiveDay(1); }} onAddTrip={handleAddTrip} onEditTrip={handleEditTrip} onDeleteTrip={handleDeleteTrip} onShareTrip={handleShareTrip} onJoinTrip={handleJoinTrip} user={user} /> ); }
+          
+          if (!currentData && itinerary.length > 0) { setActiveDay(itinerary[0].day); return <div className="p-10 text-center"><Loader2 className="animate-spin w-8 h-8 mx-auto mb-2 text-[#2b4f60]"/>載入中...</div>; }
           if (!currentData) return <div className="p-10 text-center">初始化行程...</div>;
 
           return (
             <div className="h-[100dvh] bg-[#f4f4f0] font-sans text-[#2C3E50] max-w-md mx-auto shadow-2xl overflow-hidden flex flex-col relative transition-all duration-300">
               <div className="bg-[#FDFCF8]/90 backdrop-blur-md pt-12 px-4 pb-3 border-b border-stone-200 shrink-0 z-[1001] flex justify-between items-center shadow-sm">
-                <div className="flex items-center gap-2"><button onClick={() => setCurrentTripId(null)} className="text-stone-400 hover:text-[#2b4f60] p-1 rounded-full hover:bg-stone-100 transition-colors"><ArrowLeft size={18} /></button><div className="text-sm font-bold tracking-widest text-[#2b4f60] py-2 font-serif flex items-center gap-2"><span className="text-[#B74B4B]">●</span> {currentTrip.title} </div></div>
+                <div className="flex items-center gap-2"><button onClick={() => {setCurrentTripId(null); setIsReadOnly(false);}} className="text-stone-400 hover:text-[#2b4f60] p-1 rounded-full hover:bg-stone-100 transition-colors"><ArrowLeft size={18} /></button><div className="text-sm font-bold tracking-widest text-[#2b4f60] py-2 font-serif flex items-center gap-2"><span className="text-[#B74B4B]">●</span> {currentTrip.title} {isReadOnly && <span className="bg-red-100 text-red-600 px-2 py-0.5 rounded text-[10px]">唯讀</span>}</div></div>
                 <div className="flex gap-2 items-center">
                   {view === 'itinerary' && <WeatherWidget city={currentData.city} initialCity={currentData.city} defaultLat={currentData.defaultLat} defaultLng={currentData.defaultLng} />}
-                  <button onClick={() => setShowSettings(true)} className={`text-stone-400 hover:text-[#2b4f60] p-1 rounded-full transition-colors relative ${user?.isAnonymous ? 'bg-yellow-50 text-yellow-500 hover:text-yellow-600' : 'text-[#2b4f60]'}`}>
-                      <Settings size={18}/>
-                      {user?.isAnonymous && <span className="absolute top-0 right-0 w-2 h-2 bg-yellow-500 rounded-full border border-white"></span>}
-                  </button>
+                  <button onClick={() => setShowSettings(true)} className={`text-stone-400 hover:text-[#2b4f60] p-1 rounded-full transition-colors relative ${user?.isAnonymous ? 'bg-yellow-50 text-yellow-500 hover:text-yellow-600' : 'text-[#2b4f60]'}`}> <Settings size={18}/> </button>
                 </div>
               </div>
               
@@ -2041,88 +1785,34 @@
                   {view === 'itinerary' && (
                       <>
                           <div className="w-full relative shrink-0 transition-all duration-300 z-0 border-b border-stone-200 shadow-sm" style={{ height: '40vh' }}>
-                            <LeafletMap 
-                              itinerary={itinerary} 
-                              activeDay={activeDay} 
-                              onMarkerDrag={handleMarkerDrag} 
-                              isEditMode={isMapEditMode} 
-                              onToggleEditMode={() => setIsMapEditMode(!isMapEditMode)} 
-                              onEventUpdate={handleUpdateEvent} 
-                              onHideEvent={handleHideEvent} 
-                              onMarkerClick={(item) => setMapEditDialog({isOpen: true, data: item})}
-                              isSplitView={true} 
-                            />
+                            <LeafletMap itinerary={itinerary} activeDay={activeDay} onMarkerDrag={handleMarkerDrag} isEditMode={isMapEditMode && !isReadOnly} onToggleEditMode={() => setIsMapEditMode(!isMapEditMode)} onEventUpdate={handleUpdateEvent} onHideEvent={handleHideEvent} onMarkerClick={(item) => !isReadOnly && setMapEditDialog({isOpen: true, data: item})} isSplitView={true} />
                           </div>
                           <div className="animate-fade-in pb-24 bg-[#f4f4f0] relative z-10">
-                            {/* Sticky Header for Days */}
                             <div className="bg-[#FDFCF8]/95 backdrop-blur-sm border-b border-stone-200 shadow-sm sticky top-0 z-20">
                                 <div ref={scrollRef} className="flex overflow-x-auto no-scrollbar py-3 px-4 gap-3 items-center">
                                     {itinerary.map(d => (
                                         <div key={d.day} className="relative group flex-shrink-0">
                                             <button onClick={() => setActiveDay(d.day)} className={`flex flex-col items-center min-w-[4.5rem] py-2 rounded transition-all border ${activeDay === d.day ? `bg-[#2b4f60] text-[#FDFCF8] border-[#2b4f60] shadow-md` : 'bg-white border-stone-200 text-stone-400'}`}>
                                                 <span className="text-[10px] font-bold uppercase opacity-80 mb-0.5 font-serif">Day {d.day}</span>
-                                                {isTimelineEditMode ? (
-                                                    <input 
-                                                        value={d.date} 
-                                                        onChange={(e) => handleUpdateDayDate(d.day, e.target.value)}
-                                                        className={`text-sm font-bold w-16 text-center bg-transparent border-b border-dashed outline-none ${activeDay === d.day ? 'text-white border-white/50' : 'text-stone-500 border-stone-300'}`}
-                                                        onClick={(e) => e.stopPropagation()}
-                                                    />
-                                                ) : (
-                                                    <span className="text-sm font-bold">{d.date.split(' ')[0]}</span>
-                                                )}
+                                                {(isTimelineEditMode && !isReadOnly) ? ( <input value={d.date} onChange={(e) => handleUpdateDayDate(d.day, e.target.value)} className={`text-sm font-bold w-16 text-center bg-transparent border-b border-dashed outline-none ${activeDay === d.day ? 'text-white border-white/50' : 'text-stone-500 border-stone-300'}`} onClick={(e) => e.stopPropagation()} /> ) : ( <span className="text-sm font-bold">{d.date.split(' ')[0]}</span> )}
                                             </button>
-                                            {isTimelineEditMode && itinerary.length > 1 && (
-                                                <button 
-                                                    onClick={(e) => handleDeleteDay(e, d.day)}
-                                                    className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full flex items-center justify-center shadow-sm z-10 hover:bg-red-600"
-                                                >
-                                                    <X size={10} />
-                                                </button>
-                                            )}
+                                            {(isTimelineEditMode && !isReadOnly && itinerary.length > 1) && ( <button onClick={(e) => handleDeleteDay(e, d.day)} className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full flex items-center justify-center shadow-sm z-10 hover:bg-red-600"> <X size={10} /> </button> )}
                                         </div>
                                     ))}
-                                    <button onClick={handleAddDay} className="flex-shrink-0 flex flex-col items-center justify-center min-w-[3rem] h-[3.5rem] rounded border border-dashed border-stone-300 text-stone-400 hover:bg-stone-50"><Plus size={20}/></button>
+                                    {!isReadOnly && <button onClick={handleAddDay} className="flex-shrink-0 flex flex-col items-center justify-center min-w-[3rem] h-[3.5rem] rounded border border-dashed border-stone-300 text-stone-400 hover:bg-stone-50"><Plus size={20}/></button>}
                                 </div>
                             </div>
                             
                             <div className="px-4 py-6">
                               <div className={`mb-6 pl-3 border-l-4 border-${currentData.themeColor}-600 flex justify-between items-end`}>
-                                {isEditingDay ? ( <div className="space-y-2 w-full mr-2"><input className="w-full p-1 border rounded text-lg font-bold" value={editDayData.title} onChange={e=>setEditDayData({...editDayData, title:e.target.value})} placeholder="標題"/><div className="flex gap-2"><input className="w-1/2 p-1 border rounded text-xs" value={editDayData.date} onChange={e=>setEditDayData({...editData, date:e.target.value})} placeholder="日期"/><input className="w-1/2 p-1 border rounded text-xs" value={editDayData.city} onChange={e=>setEditDayData({...editDayData, city:e.target.value})} placeholder="城市"/></div><button onClick={handleUpdateDayInfo} className="bg-green-600 text-white text-xs px-2 py-1 rounded">完成</button></div> ) : ( <div onClick={() => { if(isTimelineEditMode) { setEditDayData({title: currentData.title, date: currentData.date, city: currentData.city}); setIsEditingDay(true); }}} className={isTimelineEditMode ? "cursor-pointer border border-dashed border-transparent hover:border-stone-300 rounded p-1" : ""}><h2 className="text-2xl font-bold text-[#2C3E50] mb-1 font-serif">{currentData.title}</h2><div className="flex items-center gap-2 text-sm text-stone-500 font-medium"><MapPin size={14} /> {currentData.city}</div></div> )}
-                                <div className="flex flex-col gap-2 justify-end"><button onClick={() => setIsTimelineEditMode(!isTimelineEditMode)} className={`text-stone-400 hover:text-[#2b4f60] p-1 rounded-full ${isTimelineEditMode ? 'bg-stone-200 text-[#2b4f60]' : ''}`}><Pencil size={18}/></button></div>
+                                {(isEditingDay && !isReadOnly) ? ( <div className="space-y-2 w-full mr-2"><input className="w-full p-1 border rounded text-lg font-bold" value={editDayData.title} onChange={e=>setEditDayData({...editDayData, title:e.target.value})} placeholder="標題"/><div className="flex gap-2"><input className="w-1/2 p-1 border rounded text-xs" value={editDayData.date} onChange={e=>setEditDayData({...editData, date:e.target.value})} placeholder="日期"/><input className="w-1/2 p-1 border rounded text-xs" value={editDayData.city} onChange={e=>setEditDayData({...editDayData, city:e.target.value})} placeholder="城市"/></div><button onClick={handleUpdateDayInfo} className="bg-green-600 text-white text-xs px-2 py-1 rounded">完成</button></div> ) : ( <div onClick={() => { if(isTimelineEditMode && !isReadOnly) { setEditDayData({title: currentData.title, date: currentData.date, city: currentData.city}); setIsEditingDay(true); }}} className={isTimelineEditMode && !isReadOnly ? "cursor-pointer border border-dashed border-transparent hover:border-stone-300 rounded p-1" : ""}><h2 className="text-2xl font-bold text-[#2C3E50] mb-1 font-serif">{currentData.title}</h2><div className="flex items-center gap-2 text-sm text-stone-500 font-medium"><MapPin size={14} /> {currentData.city}</div></div> )}
+                                {!isReadOnly && <div className="flex flex-col gap-2 justify-end"><button onClick={() => setIsTimelineEditMode(!isTimelineEditMode)} className={`text-stone-400 hover:text-[#2b4f60] p-1 rounded-full ${isTimelineEditMode ? 'bg-stone-200 text-[#2b4f60]' : ''}`}><Pencil size={18}/></button></div>}
                               </div>
                               
-                              {currentData.hasRoutes && currentData.routes && (
-                                  <RouteSelector routes={currentData.routes} activeRouteId={route} onSelectRoute={setRoute} isEditing={isTimelineEditMode} onAddRoute={handleAddRoute} onDeleteRoute={handleDeleteRoute} onRenameRoute={handleRenameRoute} />
-                              )}
-
-                              {isTimelineEditMode && !currentData.hasRoutes && (<div className="mb-6 animate-fade-in"><button onClick={handleEnableBranches} className="w-full py-2 border-2 border-dashed border-[#2b4f60] text-[#2b4f60] rounded-lg font-bold text-sm flex items-center justify-center gap-2 hover:bg-[#2b4f60]/5"><GitBranch size={16}/> 建立分歧路線 (如: 龜有/築地)</button></div>)}
-                              
-                              <div className="">{currentData.timeline.map((item, idx) => { 
-                                  const isLast = idx === currentData.timeline.length - 1; 
-                                  return ( 
-                                    <div key={item.id} id={item.id} className={`${isTimelineEditMode ? "transition-all" : ""}`}>
-                                      <EventCard 
-                                          key={item.id} 
-                                          data={item} 
-                                          onUpdate={handleUpdateEvent} 
-                                          onAutoCoords={fetchCoordinates} 
-                                          isEditing={isTimelineEditMode} 
-                                          onDelete={() => confirmDelete(item.id)} 
-                                          dragHandleProps={{}} 
-                                          isLast={isLast}
-                                          isFirst={idx === 0}
-                                          onEditStart={() => setEditingItemId(item.id)}
-                                          onEditEnd={() => setEditingItemId(null)}
-                                          onMoveUp={() => handleMoveItem(item.id, -1)}
-                                          onMoveDown={() => handleMoveItem(item.id, 1)}
-                                      /> 
-                                    </div> 
-                                  ); 
-                              })}</div>
-                              {isTimelineEditMode && (
-                                <button onClick={() => { setNewEventData({type: 'event', iconType: 'food', title:''}); setShowAddModal(true); }} className="w-full py-3 mt-6 rounded-xl border-2 border-dashed border-stone-300 text-stone-400 font-bold flex items-center justify-center gap-2 hover:bg-stone-50 transition-all"><Plus size={20} /> 新增行程點</button>
-                              )}
+                              {currentData.hasRoutes && currentData.routes && ( <RouteSelector routes={currentData.routes} activeRouteId={route} onSelectRoute={setRoute} isEditing={isTimelineEditMode && !isReadOnly} onAddRoute={handleAddRoute} onDeleteRoute={handleDeleteRoute} onRenameRoute={handleRenameRoute} /> )}
+                              {(isTimelineEditMode && !isReadOnly && !currentData.hasRoutes) && (<div className="mb-6 animate-fade-in"><button onClick={handleEnableBranches} className="w-full py-2 border-2 border-dashed border-[#2b4f60] text-[#2b4f60] rounded-lg font-bold text-sm flex items-center justify-center gap-2 hover:bg-[#2b4f60]/5"><GitBranch size={16}/> 建立分歧路線 (如: 龜有/築地)</button></div>)}
+                              <div className="">{currentData.timeline.map((item, idx) => { const isLast = idx === currentData.timeline.length - 1; return ( <div key={item.id} id={item.id} className={`${isTimelineEditMode ? "transition-all" : ""}`}> <EventCard key={item.id} data={item} onUpdate={handleUpdateEvent} onAutoCoords={fetchCoordinates} isEditing={isTimelineEditMode} isReadOnly={isReadOnly} onDelete={() => confirmDelete(item.id)} dragHandleProps={{}} isLast={isLast} isFirst={idx === 0} onEditStart={() => setEditingItemId(item.id)} onEditEnd={() => setEditingItemId(null)} onMoveUp={() => handleMoveItem(item.id, -1)} onMoveDown={() => handleMoveItem(item.id, 1)} /> </div> ); })}</div>
+                              {(isTimelineEditMode && !isReadOnly) && ( <button onClick={() => { setNewEventData({type: 'event', iconType: 'food', title:''}); setShowAddModal(true); }} className="w-full py-3 mt-6 rounded-xl border-2 border-dashed border-stone-300 text-stone-400 font-bold flex items-center justify-center gap-2 hover:bg-stone-50 transition-all"><Plus size={20} /> 新增行程點</button> )}
                             </div>
                          </div>
                       </>
@@ -2139,21 +1829,11 @@
               <GlobalSettings isOpen={showSettings} onClose={() => setShowSettings(false)} user={user} currentProjectId={appId} />
               
               <div className="bg-[#FDFCF8] border-t border-stone-200 pb-safe pt-2 px-2 grid grid-cols-5 shrink-0 z-30 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
-                  <button onClick={() => setView('itinerary')} className={`flex flex-col items-center justify-center p-2 gap-1 transition-colors ${view === 'itinerary' ? 'text-[#2b4f60]' : 'text-stone-300 hover:text-stone-50'}`}>
-                      <BookOpen size={22} strokeWidth={view === 'itinerary' ? 2.5 : 2} /><span className="text-[10px] font-bold font-serif">行程</span>
-                  </button>
-                  <button onClick={() => setView('expenses')} className={`flex flex-col items-center justify-center p-2 gap-1 transition-colors ${view === 'expenses' ? 'text-[#2b4f60]' : 'text-stone-300 hover:text-stone-500'}`}>
-                      <Wallet size={22} strokeWidth={view === 'expenses' ? 2.5 : 2} /><span className="text-[10px] font-bold font-serif">記帳</span>
-                  </button>
-                  <button onClick={() => setView('packing')} className={`flex flex-col items-center justify-center p-2 gap-1 transition-colors ${view === 'packing' ? 'text-[#2b4f60]' : 'text-stone-300 hover:text-stone-500'}`}>
-                      <Luggage size={22} strokeWidth={view === 'packing' ? 2.5 : 2} /><span className="text-[10px] font-bold font-serif">行李</span>
-                  </button>
-                  <button onClick={() => setView('translation')} className={`flex flex-col items-center justify-center p-2 gap-1 transition-colors ${view === 'translation' ? 'text-[#2b4f60]' : 'text-stone-300 hover:text-stone-500'}`}>
-                      <Languages size={22} strokeWidth={view === 'translation' ? 2.5 : 2} /><span className="text-[10px] font-bold font-serif">翻譯</span>
-                  </button>
-                  <button onClick={() => setView('info')} className={`flex flex-col items-center justify-center p-2 gap-1 transition-colors ${view === 'info' ? 'text-[#2b4f60]' : 'text-stone-300 hover:text-stone-500'}`}>
-                      <Info size={22} strokeWidth={view === 'info' ? 2.5 : 2} /><span className="text-[10px] font-bold font-serif">資訊</span>
-                  </button>
+                  <button onClick={() => setView('itinerary')} className={`flex flex-col items-center justify-center p-2 gap-1 transition-colors ${view === 'itinerary' ? 'text-[#2b4f60]' : 'text-stone-300 hover:text-stone-50'}`}> <BookOpen size={22} strokeWidth={view === 'itinerary' ? 2.5 : 2} /><span className="text-[10px] font-bold font-serif">行程</span> </button>
+                  <button onClick={() => setView('expenses')} className={`flex flex-col items-center justify-center p-2 gap-1 transition-colors ${view === 'expenses' ? 'text-[#2b4f60]' : 'text-stone-300 hover:text-stone-500'}`}> <Wallet size={22} strokeWidth={view === 'expenses' ? 2.5 : 2} /><span className="text-[10px] font-bold font-serif">記帳</span> </button>
+                  <button onClick={() => setView('packing')} className={`flex flex-col items-center justify-center p-2 gap-1 transition-colors ${view === 'packing' ? 'text-[#2b4f60]' : 'text-stone-300 hover:text-stone-500'}`}> <Luggage size={22} strokeWidth={view === 'packing' ? 2.5 : 2} /><span className="text-[10px] font-bold font-serif">行李</span> </button>
+                  <button onClick={() => setView('translation')} className={`flex flex-col items-center justify-center p-2 gap-1 transition-colors ${view === 'translation' ? 'text-[#2b4f60]' : 'text-stone-300 hover:text-stone-500'}`}> <Languages size={22} strokeWidth={view === 'translation' ? 2.5 : 2} /><span className="text-[10px] font-bold font-serif">翻譯</span> </button>
+                  <button onClick={() => setView('info')} className={`flex flex-col items-center justify-center p-2 gap-1 transition-colors ${view === 'info' ? 'text-[#2b4f60]' : 'text-stone-300 hover:text-stone-500'}`}> <Info size={22} strokeWidth={view === 'info' ? 2.5 : 2} /><span className="text-[10px] font-bold font-serif">資訊</span> </button>
               </div>
             </div>
           );
