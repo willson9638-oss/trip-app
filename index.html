@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Trip App (Sync V6 - Updated Config)</title>
+    <title>Trip App (Fast Sync V7)</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -526,7 +526,7 @@
           }
         } catch (e) { console.log("Firebase Init Error:", e); }
 
-        // 🆕 全新強化的資料同步 Hook (Direct Binding + Debounce)
+        // 🆕 全新強化的資料同步 Hook (Fast Sync: 500ms Debounce)
         const usePersistentData = (collectionName, docId, initialValue, user, pathType='private') => {
           const [data, setData] = useState(initialValue);
           const [isLoaded, setIsLoaded] = useState(false);
@@ -581,6 +581,7 @@
                   clearTimeout(saveTimeoutRef.current);
               }
 
+              // 🚀 關鍵修改：將延遲時間從 1500ms 縮短為 500ms，實現「有編輯就同步」的即時感
               saveTimeoutRef.current = setTimeout(async () => {
                   if (user && db && docId) {
                       try {
@@ -601,7 +602,7 @@
                   } else {
                       setSyncStatus('saved'); 
                   }
-              }, 1500); // 1.5秒後自動上傳
+              }, 500); // ⚡️ 0.5秒後自動上傳 (Fast Sync)
           }, [user, collectionName, docId, pathType]);
 
           return [data, setValue, isLoaded, syncStatus];
