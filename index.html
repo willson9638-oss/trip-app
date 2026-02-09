@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Trip App (V14 Feature Update)</title>
+    <title>Trip App (V14.1 Fixed)</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -1148,7 +1148,6 @@
           );
         };
 
-        // 🆕 複製行程選擇視窗
         const CopyTargetDialog = ({ isOpen, itinerary, onClose, onConfirm }) => {
             const [selectedDay, setSelectedDay] = useState(null);
             const [selectedRoute, setSelectedRoute] = useState(null);
@@ -1258,7 +1257,6 @@
             );
         };
 
-        // ... (MenuItemModal, TranslationView, ExpenseView, PackingView, InfoView, HomeView remain unchanged) ...
         const MenuItemModal = ({ item, initialQty = 1, initialOptions = [], onClose, onAdd, isOpen }) => {
             const [quantity, setQuantity] = useState(initialQty);
             const [options, setOptions] = useState([]);
@@ -1416,7 +1414,7 @@
           const [editDayData, setEditDayData] = useState({ title: '', date: '', city: '' });
           const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, id: null, type: 'item' });
           const [mapEditDialog, setMapEditDialog] = useState({ isOpen: false, data: null }); 
-          const [copyDialog, setCopyDialog] = useState({ isOpen: false, item: null }); // 🆕 複製視窗狀態
+          const [copyDialog, setCopyDialog] = useState({ isOpen: false, item: null }); 
           const [showSettings, setShowSettings] = useState(false);
           const [editingItemId, setEditingItemId] = useState(null); 
           const scrollRef = useRef(null);
@@ -1502,21 +1500,19 @@
           const confirmDelete = (id) => { if(isReadOnly) return; setConfirmDialog({ isOpen: true, id, type: 'item' }); };
           const executeDelete = () => { if(isReadOnly) return; const id = confirmDialog.id; if (!id) return; const newItinerary = itinerary.map(day => { if (day.day !== activeDay) return day; if (confirmDialog.type === 'route') { const newRoutes = { ...day.routes }; delete newRoutes[id]; return { ...day, hasRoutes: Object.keys(newRoutes).length > 0, routes: newRoutes }; } if (day.hasRoutes) { const keys = Object.keys(day.routes); const newRoutes = {}; keys.forEach(k => { newRoutes[k] = { ...day.routes[k], timeline: day.routes[k].timeline.filter(t => t.id !== id) }; }); return { ...day, routes: newRoutes }; } return { ...day, timeline: day.timeline.filter(t => t.id !== id) }; }); updateCurrentItinerary(newItinerary); if (confirmDialog.type === 'route' && route === id) { setRoute(null); } setConfirmDialog({ isOpen: false, id: null, type: 'item' }); };
           
-          // 🆕 執行複製邏輯
           const executeCopy = (targetDayNum, targetRouteKey) => {
               const itemToCopy = copyDialog.item;
               if (!itemToCopy) return;
 
               const newItem = {
                   ...itemToCopy,
-                  id: `copied-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`, // 產生新 ID
-                  title: `${itemToCopy.title} (複製)` // 可選擇是否加後綴
+                  id: `copied-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`, 
+                  title: `${itemToCopy.title} (複製)` 
               };
 
               const newItinerary = itinerary.map(d => {
                   if (d.day !== targetDayNum) return d;
                   
-                  // 如果目標天數有分歧路線
                   if (d.hasRoutes && targetRouteKey) {
                       return {
                           ...d,
@@ -1530,7 +1526,6 @@
                       };
                   }
                   
-                  // 如果沒有分歧路線
                   return {
                       ...d,
                       timeline: [...(d.timeline || []), newItem]
@@ -1540,7 +1535,6 @@
               updateCurrentItinerary(newItinerary);
               setCopyDialog({ isOpen: false, item: null });
               
-              // 如果複製到當前檢視的天數，滾動到底部或提示
               if (targetDayNum === activeDay) {
                  setTimeout(() => {
                       const el = document.getElementById(newItem.id);
@@ -1607,8 +1601,8 @@
                                     <div className="space-y-2 w-full mr-2">
                                         <input className="w-full p-1 border rounded text-lg font-bold" value={editDayData.title} onChange={e=>setEditDayData({...editDayData, title:e.target.value})} placeholder="標題"/>
                                         <div className="flex gap-2">
-                                            <input className="w-1/2 p-1 border rounded text-xs" value={editDayData.date} onChange={e=>setEditDayData({...editData, date:e.target.value})} placeholder="日期"/>
-                                            <input className="w-1/2 p-1 border rounded text-xs" value={editDayData.city} onChange={e=>setEditDayData({...editData, city:e.target.value})} placeholder="城市"/>
+                                            <input className="w-1/2 p-1 border rounded text-xs" value={editDayData.date} onChange={e=>setEditDayData({...editDayData, date:e.target.value})} placeholder="日期"/>
+                                            <input className="w-1/2 p-1 border rounded text-xs" value={editDayData.city} onChange={e=>setEditDayData({...editDayData, city:e.target.value})} placeholder="城市"/>
                                         </div>
                                         <button onClick={handleUpdateDayInfo} className="bg-green-600 text-white text-xs px-2 py-1 rounded">完成</button>
                                     </div> 
