@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Trip App (V14.1 Fixed)</title>
+    <title>Trip App (V14.2 Updated Icons)</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -72,6 +72,26 @@
             Trash2: [['path', { d: "M3 6h18" }], ['path', { d: "M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" }], ['path', { d: "M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" }], ['line', { x1: "10", x2: "10", y1: "11", y2: "17" }], ['line', { x1: "14", x2: "14", y1: "11", y2: "17" }]],
             Plane: [['path', { d: "M2 12h20" }], ['path', { d: "M13 12l5-9" }], ['path', { d: "M13 12l5 9" }]], 
             Train: [['rect', { width: "16", height: "16", x: "4", y: "4", rx: "2" }], ['path', { d: "M4 10h16" }], ['path', { d: "M12 4v6" }], ['path', { d: "M8 21l-3-3" }], ['path', { d: "M16 21l3-3" }]],
+            
+            // 🆕 Modified Subway Icon: Circle Tunnel + Train Face
+            Subway: [
+                ['circle', { cx: "12", cy: "12", r: "10" }], 
+                ['path', { d: "M15 7H9a3 3 0 0 0-3 3v9h12v-9a3 3 0 0 0-3-3z" }], 
+                ['rect', { x: "7", y: "11", width: "10", height: "4", rx: "0.5" }], 
+                ['circle', { cx: "9", cy: "17", r: "1.2", fill: "currentColor" }], 
+                ['circle', { cx: "15", cy: "17", r: "1.2", fill: "currentColor" }]
+            ],
+            
+            // 🆕 New Taxi Icon: Car with Roof Light
+            Taxi: [
+                ['path', { d: "M9 5h6v3H9z" }], // Top light
+                ['path', { d: "M5 10h14l-2-4H7z" }], // Windshield/Roof
+                ['rect', { x: "3", y: "10", width: "18", height: "9", rx: "2" }], // Body
+                ['circle', { cx: "6", cy: "14", r: "1.5" }], // Headlight L
+                ['circle', { cx: "18", cy: "14", r: "1.5" }], // Headlight R
+                ['path', { d: "M5 19v2" }], ['path', { d: "M19 19v2" }] // Wheels
+            ],
+
             MapPin: [['path', { d: "M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" }], ['circle', { cx: "12", cy: "10", r: "3" }]],
             Check: [['path', { d: "M20 6 9 17l-5-5" }]],
             X: [['path', { d: "M18 6 6 18" }], ['path', { d: "m6 6 12 12" }]],
@@ -226,7 +246,9 @@
             ChevronRight, Ticket, Music, Mountain, Tent, Bike, Waves, Palette, Ghost, Gamepad2, Landmark: Temple, Beer, Wine, Anchor, 
             Map: MapIcon, Crosshair, MoreVertical, AlertTriangle, Key, MessageSquare, Minus, GitBranch, MicOff, EyeOff, Sparkles, 
             Link: LinkIcon, Upload, Image: ImgIcon, Clock, User, LogOut, UserPlus, LogIn, Lock, ShieldCheck, Mail, Database,
-            RotateCw, Cloud: CloudIcon, CheckCircle
+            RotateCw, Cloud: CloudIcon, CheckCircle,
+            // 🆕 New Icons
+            Subway, Taxi
         } = LucideIcons;
 
         // 🛑 渲染 Lucide Icon 或 自定義 Class Icon
@@ -360,7 +382,7 @@
         ];
 
         const ICON_MAP = {
-          plane: Plane, train: Train, subway: Train, bus: Bus, car: Car, ship: Ship, bike: Bike, walk: Footprints,
+          plane: Plane, train: Train, subway: Subway, bus: Bus, car: Car, taxi: Taxi, ship: Ship, bike: Bike, walk: Footprints,
           camera: Camera, star: Star, food: Utensils, coffee: Coffee, beer: Beer, wine: Wine, shop: ShoppingBag, stay: BedDouble,
           temple: Temple, landmark: Landmark, build: Building2, tree: TreeDeciduous, mountain: Mountain, waves: Waves, fish: Fish,
           ticket: Ticket, palette: Palette, music: Music, game: Gamepad2, ghost: Ghost, park: Sun, relax: Coffee,
@@ -372,7 +394,7 @@
 
         const getIconStyle = (iconType) => {
           if (iconType === 'airport') return 'bg-[#0071c5] text-white border-transparent shadow-md';
-          if (['plane', 'train', 'subway', 'bus', 'car', 'ship', 'bike', 'walk', 'custom'].includes(iconType)) return 'bg-[#1e3a8a] text-white border-transparent'; 
+          if (['plane', 'train', 'subway', 'bus', 'car', 'taxi', 'ship', 'bike', 'walk', 'custom'].includes(iconType)) return 'bg-[#1e3a8a] text-white border-transparent'; 
           switch (iconType) {
             case 'camera': return 'bg-red-500 text-white border-transparent'; 
             case 'food': return 'bg-orange-500 text-white border-transparent'; 
@@ -388,7 +410,7 @@
             title: "🚆 交通移動",
             icons: [
               { id: 'plane', label: '飛機' }, { id: 'train', label: '火車' }, { id: 'subway', label: '地鐵' },
-              { id: 'bus', label: '巴士' }, { id: 'car', label: '汽車' }, { id: 'ship', label: '船' },
+              { id: 'bus', label: '巴士' }, { id: 'car', label: '汽車' }, { id: 'taxi', label: '計程車' }, { id: 'ship', label: '船' },
               { id: 'bike', label: '自行車' }, { id: 'walk', label: '步行' }, { id: 'custom', label: '自訂 (↝)' } // 🆕 新增自訂交通
             ]
           },
@@ -1643,7 +1665,7 @@
               
               <div className="bg-[#FDFCF8] border-t border-stone-200 pb-safe pt-2 px-2 grid grid-cols-5 shrink-0 z-30 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
                   <button onClick={() => setView('itinerary')} className={`flex flex-col items-center justify-center p-2 gap-1 transition-colors ${view === 'itinerary' ? 'text-[#2b4f60]' : 'text-stone-300 hover:text-stone-50'}`}> <BookOpen size={22} strokeWidth={view === 'itinerary' ? 2.5 : 2} /><span className="text-[10px] font-bold font-serif">行程</span> </button>
-                  <button onClick={() => setView('expenses')} className={`flex flex-col items-center justify-center p-2 gap-1 transition-colors ${view === 'expenses' ? 'text-[#2b4f60]' : 'text-stone-300 hover:text-stone-500'}`}> <Wallet size={22} strokeWidth={view === 'expenses' ? 2.5 : 2} /><span className="text-[10px] font-bold font-serif">記帳</span> </button>
+                  <button onClick={() => setView('expenses')} className={`flex flex-col items-center justify-center p-2 gap-1 transition-colors ${view === 'expenses' ? 'text-[#2b4f60]' : 'text-stone-300 hover:text-stone-50'}`}> <Wallet size={22} strokeWidth={view === 'expenses' ? 2.5 : 2} /><span className="text-[10px] font-bold font-serif">記帳</span> </button>
                   <button onClick={() => setView('packing')} className={`flex flex-col items-center justify-center p-2 gap-1 transition-colors ${view === 'packing' ? 'text-[#2b4f60]' : 'text-stone-300 hover:text-stone-500'}`}> <Luggage size={22} strokeWidth={view === 'packing' ? 2.5 : 2} /><span className="text-[10px] font-bold font-serif">行李</span> </button>
                   <button onClick={() => setView('translation')} className={`flex flex-col items-center justify-center p-2 gap-1 transition-colors ${view === 'translation' ? 'text-[#2b4f60]' : 'text-stone-300 hover:text-stone-500'}`}> <Languages size={22} strokeWidth={view === 'translation' ? 2.5 : 2} /><span className="text-[10px] font-bold font-serif">翻譯</span> </button>
                   <button onClick={() => setView('info')} className={`flex flex-col items-center justify-center p-2 gap-1 transition-colors ${view === 'info' ? 'text-[#2b4f60]' : 'text-stone-300 hover:text-stone-500'}`}> <Info size={22} strokeWidth={view === 'info' ? 2.5 : 2} /><span className="text-[10px] font-bold font-serif">資訊</span> </button>
