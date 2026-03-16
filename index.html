@@ -424,7 +424,6 @@
           { id: 9, text: "摺疊傘 (晴雨兩用)", checked: false, category: "生活" },
           { id: 10, text: "購物袋 (環保袋)", checked: false, category: "生活" },
         ];
-
         const INITIAL_ITINERARY_DATA = [
           {
             day: 1, date: "7/6 (日)", city: "東京", defaultLat: 35.6895, defaultLng: 139.6917, title: "啟程與澀谷夕陽", themeColor: "indigo",
@@ -509,6 +508,30 @@
             ]
           },
         ];
+
+        let db, auth;
+        let appId = "trip-app-d63a2"; 
+
+        try {
+          let firebaseConfig = null;
+          if (YOUR_FIREBASE_CONFIG.apiKey && YOUR_FIREBASE_CONFIG.appId) {
+             firebaseConfig = YOUR_FIREBASE_CONFIG;
+          } 
+          else if (typeof __firebase_config !== 'undefined') {
+             firebaseConfig = JSON.parse(__firebase_config);
+          }
+
+          if (firebaseConfig) {
+              const app = initializeApp(firebaseConfig);
+              auth = getAuth(app);
+              db = getFirestore(app);
+              if (firebaseConfig.measurementId) {
+                  getAnalytics(app);
+              }
+              if (firebaseConfig.projectId) appId = firebaseConfig.projectId;
+          }
+        } catch (e) { console.log("Firebase Init Error:", e); }
+
         const usePersistentData = (collectionName, docId, initialValue, user, pathType='private') => {
           const currentDocIdRef = useRef(docId); 
           const [data, setData] = useState(() => JSON.parse(JSON.stringify(initialValue)));
@@ -528,9 +551,17 @@
             const localKey = `local_${collectionName}_${docId}`;
             const saved = localStorage.getItem(localKey);
             if (saved) { 
-                try { setData(JSON.parse(saved)); } catch (e) { setData(JSON.parse(JSON.stringify(initialValue))); }
+                try { 
+                    const parsed = JSON.parse(saved);
+                    setData(parsed); 
+                    dataRef.current = parsed;
+                } catch (e) { 
+                    setData(JSON.parse(JSON.stringify(initialValue))); 
+                    dataRef.current = JSON.parse(JSON.stringify(initialValue));
+                }
             } else {
                 setData(JSON.parse(JSON.stringify(initialValue)));
+                dataRef.current = JSON.parse(JSON.stringify(initialValue));
             }
             setIsLoaded(true);
           }, [collectionName, docId]);
@@ -551,6 +582,7 @@
                 const cloudData = docSnap.data().data;
                 if (JSON.stringify(cloudData) !== JSON.stringify(dataRef.current)) {
                     if (currentDocIdRef.current === docId) {
+                        dataRef.current = cloudData; 
                         setData(cloudData);
                         const localKey = `local_${collectionName}_${docId}`;
                         localStorage.setItem(localKey, JSON.stringify(cloudData));
@@ -566,6 +598,7 @@
           const setValue = useCallback((newDataAction) => {
               const resolvedData = typeof newDataAction === 'function' ? newDataAction(dataRef.current) : newDataAction;
               
+              dataRef.current = resolvedData; 
               setData(resolvedData);
 
               const localKey = `local_${collectionName}_${docId}`;
@@ -622,38 +655,19 @@
           if (localApiKey) {
             try {
               const prompt = `Find the precise latitude and longitude for "${location}". Return ONLY a valid JSON object with "lat" and "lng" number properties. Example: {"lat": 35.6895, "lng": 139.6917}. Do not include markdown code blocks or any other text.`;
-              
-              const response = await fetchWithBackoff(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${localApiKey}`, { 
-                  method: 'POST', 
-                  headers: { 'Content-Type': 'application/json' }, 
-                  body: JSON.stringify({ 
-                      contents: [{ parts: [{ text: prompt }] }] 
-                  }) 
-              });
-              
+              const response = await fetchWithBackoff(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${localApiKey}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) });
               if (response.ok) {
                   const data = await response.json();
                   let text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-                  if (text) { 
-                      text = text.replace(/```json/g, '').replace(/```/g, '').trim();
-                      const jsonMatch = text.match(/\{[\s\S]*\}/); 
-                      if (jsonMatch) { 
-                          return JSON.parse(jsonMatch[0]); 
-                      } 
-                  }
+                  if (text) { text = text.replace(/```json/g, '').replace(/```/g, '').trim(); const jsonMatch = text.match(/\{[\s\S]*\}/); if (jsonMatch) { return JSON.parse(jsonMatch[0]); } }
               }
-            } catch (e) { 
-                console.warn("AI Geocoding failed:", e.message); 
-            }
+            } catch (e) { console.warn("AI Geocoding skipped:", e.message); }
           } 
-          
           try {
             const geoRes = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(location)}&count=1&language=zh&format=json`);
             const geoData = await geoRes.json();
             if (geoData.results?.length > 0) return { lat: geoData.results[0].latitude, lng: geoData.results[0].longitude };
-          } catch (e) { 
-              console.error("Standard Geocoding failed:", e); 
-          }
+          } catch (e) { console.error("Standard Geocoding failed:", e); }
           return null;
         };
 
@@ -1141,9 +1155,7 @@
                       <div className="flex gap-2"><input className="w-1/3 text-xs p-1 border rounded bg-stone-50" value={editData.lat || ''} onChange={e=>setEditData({...editData, lat: e.target.value})} placeholder="緯度" /><input className="w-1/3 text-xs p-1 border rounded bg-stone-50" value={editData.lng || ''} onChange={e=>setEditData({...editData, lng: e.target.value})} placeholder="經度" /><button onClick={handleAutoCoords} disabled={isSearching} onMouseDown={(e) => e.stopPropagation()} className="flex-1 px-2 bg-indigo-100 text-indigo-700 rounded text-xs whitespace-nowrap flex items-center justify-center gap-1 hover:bg-indigo-200 disabled:opacity-50 font-bold border border-indigo-200">{isSearching ? <Loader2 size={12} className="animate-spin"/> : <React.Fragment><Star size={12}/> AI 找座標</React.Fragment>}</button></div>
                       <textarea className="w-full text-sm p-1 border rounded" rows={3} value={editData.desc} onChange={e=>setEditData({...editData, desc: e.target.value})} placeholder="描述..." />
                       <div className="bg-stone-50 p-2 rounded border border-stone-200"><div className="flex items-center gap-2 mb-2"><label className="cursor-pointer bg-white border border-stone-300 text-stone-600 px-2 py-1 rounded text-xs font-bold flex items-center gap-1 hover:bg-stone-100"><input type="file" ref={fileInputRef} className="hidden" accept="image/*" multiple onChange={handleImageUpload} /><Upload size={12} /> 相簿/檔案</label><button onClick={() => setShowUrlInput(!showUrlInput)} className="bg-white border border-stone-300 text-stone-600 px-2 py-1 rounded text-xs font-bold flex items-center gap-1 hover:bg-stone-100"><LinkIcon size={12} /> 圖片連結</button></div>{showUrlInput && (<div className="flex gap-1 mb-2"><input className="flex-1 text-xs border rounded p-1" value={newImageUrl} onChange={e=>setNewImageUrl(e.target.value)} placeholder="https://..." /><button onClick={handleAddImageUrl} type="button" className="bg-blue-600 text-white px-2 rounded text-xs">加入</button></div>)}{editData.images && editData.images.length > 0 && (<div className="flex gap-2 overflow-x-auto pb-1">{editData.images.map((img, idx) => (<div key={idx} className="relative shrink-0 w-16 h-16 group"><img src={img} className="w-full h-full object-cover rounded border border-stone-200" /><button onClick={() => removeImage(idx)} className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-0.5 shadow opacity-0 group-hover:opacity-100 transition-opacity"><X size={10} /></button></div>))}</div>)}</div>
-                      <div><label className="text-xs font-bold text-stone-500 mb-1 block ml-1">推薦/子項目 (換行分隔)</label><textarea className="w-full text-xs p-2 border rounded bg-stone-50" rows={3} value={tempSubItems} onChange={(e) => setTempSubItems(e.target.value)} placeholder="例: 必吃布丁
-買伴手禮
-拍照點" /></div>
+                      <div><label className="text-xs font-bold text-stone-500 mb-1 block ml-1">推薦/子項目 (換行分隔)</label><textarea className="w-full text-xs p-2 border rounded bg-stone-50" rows={3} value={tempSubItems} onChange={(e) => setTempSubItems(e.target.value)} placeholder="例: 必吃布丁\n買伴手禮\n拍照點" /></div>
                       <div className="flex justify-end gap-2 mt-2"><button onClick={()=>setIsLocalEditing(false)} className="text-stone-500 text-xs px-2 py-1">取消</button><button onClick={handleSave} className="bg-[#2b4f60] text-white text-xs px-3 py-1 rounded">儲存</button></div></div>
                   ) : (
                     <React.Fragment>
@@ -1426,13 +1438,13 @@
                     
                     let text = data.candidates?.[0]?.content?.parts?.[0]?.text; 
                     if (photoMode === 'menu') { 
-                        text = text.split("```json").join("").split("```").join("").trim(); 
+                        text = text.replace(/```json/g, '').replace(/```/g, '').trim(); 
                         const parsed = JSON.parse(text); 
                         const formatted = parsed.map((item, idx) => ({ ...item, id: idx + 1 })); 
                         setMenuItems(formatted); 
                         if(formatted.length > 0) setActiveCategory(formatted[0].category || '其他'); 
                     } else if (photoMode === 'omikuji') { 
-                        text = text.split("```json").join("").split("```").join("").trim(); 
+                        text = text.replace(/```json/g, '').replace(/```/g, '').trim(); 
                         try { 
                             const parsed = JSON.parse(text); 
                             setOmikujiResult(parsed); 
@@ -1729,7 +1741,6 @@
           const handleDeleteRoute = (key) => { if(isReadOnly) return; setConfirmDialog({ isOpen: true, id: key, type: 'route' }); };
           const handleUpdateEvent = (id, newData) => { if(isReadOnly) return; const newItinerary = itinerary.map(day => { if (day.day !== activeDay) return day; if (day.hasRoutes) { const currentKey = getActiveRouteKey(day, route); const newTimeline = day.routes[currentKey].timeline.map(t => t.id === id ? { ...t, ...newData } : t); return { ...day, routes: { ...day.routes, [currentKey]: { ...day.routes[currentKey], timeline: newTimeline } } }; } return { ...day, timeline: day.timeline.map(t => t.id === id ? { ...t, ...newData } : t) }; }); updateCurrentItinerary(newItinerary); };
           const handleMarkerDrag = (id, lat, lng) => { if(isReadOnly) return; const itemToUpdate = currentData.timeline.find(t => t.id === id); if (itemToUpdate) { handleUpdateEvent(id, { lat, lng }); } };
-          const fetchCoordinates = async (query) => { try { const coords = await smartGeocode(query); return coords; } catch(e) { if (e.message === "QUOTA_EXCEEDED") setApiQuotaFull(true); return null; } };
           const handleMoveItem = (itemId, direction) => { if(isReadOnly) return; const newItinerary = itinerary.map(d => { if (d.day !== activeDay) return d; const swap = (list) => { const idx = list.findIndex(t => t.id === itemId); if (idx === -1) return list; const targetIdx = idx + direction; if (targetIdx < 0 || targetIdx >= list.length) return list; const newList = [...list]; const temp = newList[idx]; newList[idx] = newList[targetIdx]; newList[targetIdx] = temp; return newList; }; if (d.hasRoutes) { const currentKey = getActiveRouteKey(d, route); return { ...d, routes: { ...d.routes, [currentKey]: { ...d.routes[currentKey], timeline: swap(d.routes[currentKey].timeline) } } }; } return { ...d, timeline: swap(d.timeline) }; }); updateCurrentItinerary(newItinerary); };
           const confirmDelete = (id) => { if(isReadOnly) return; setConfirmDialog({ isOpen: true, id, type: 'item' }); };
           const executeDelete = () => { if(isReadOnly) return; const id = confirmDialog.id; if (!id) return; const newItinerary = itinerary.map(day => { if (day.day !== activeDay) return day; if (confirmDialog.type === 'route') { const newRoutes = { ...day.routes }; delete newRoutes[id]; return { ...day, hasRoutes: Object.keys(newRoutes).length > 0, routes: newRoutes }; } if (day.hasRoutes) { const keys = Object.keys(day.routes); const newRoutes = {}; keys.forEach(k => { newRoutes[k] = { ...day.routes[k], timeline: day.routes[k].timeline.filter(t => t.id !== id) }; }); return { ...day, routes: newRoutes }; } return { ...day, timeline: day.timeline.filter(t => t.id !== id) }; }); updateCurrentItinerary(newItinerary); if (confirmDialog.type === 'route' && route === id) { setRoute(null); } setConfirmDialog({ isOpen: false, id: null, type: 'item' }); };
