@@ -424,6 +424,7 @@
           { id: 9, text: "摺疊傘 (晴雨兩用)", checked: false, category: "生活" },
           { id: 10, text: "購物袋 (環保袋)", checked: false, category: "生活" },
         ];
+
         const INITIAL_ITINERARY_DATA = [
           {
             day: 1, date: "7/6 (日)", city: "東京", defaultLat: 35.6895, defaultLng: 139.6917, title: "啟程與澀谷夕陽", themeColor: "indigo",
@@ -509,29 +510,6 @@
           },
         ];
 
-        let db, auth;
-        let appId = "trip-app-d63a2"; 
-
-        try {
-          let firebaseConfig = null;
-          if (YOUR_FIREBASE_CONFIG.apiKey && YOUR_FIREBASE_CONFIG.appId) {
-             firebaseConfig = YOUR_FIREBASE_CONFIG;
-          } 
-          else if (typeof __firebase_config !== 'undefined') {
-             firebaseConfig = JSON.parse(__firebase_config);
-          }
-
-          if (firebaseConfig) {
-              const app = initializeApp(firebaseConfig);
-              auth = getAuth(app);
-              db = getFirestore(app);
-              if (firebaseConfig.measurementId) {
-                  getAnalytics(app);
-              }
-              if (firebaseConfig.projectId) appId = firebaseConfig.projectId;
-          }
-        } catch (e) { console.log("Firebase Init Error:", e); }
-
         const usePersistentData = (collectionName, docId, initialValue, user, pathType='private') => {
           const currentDocIdRef = useRef(docId); 
           const [data, setData] = useState(() => JSON.parse(JSON.stringify(initialValue)));
@@ -587,42 +565,42 @@
           }, [user, collectionName, docId, pathType]);
 
           const setValue = useCallback((newDataAction) => {
-              setData(prevData => {
-                  const resolvedData = typeof newDataAction === 'function' ? newDataAction(prevData) : newDataAction;
-                  const localKey = `local_${collectionName}_${docId}`;
-                  localStorage.setItem(localKey, JSON.stringify(resolvedData));
-                  setSyncStatus('saving');
-                  
-                  if (saveTimeoutRef.current) {
-                      clearTimeout(saveTimeoutRef.current);
-                  }
+              const resolvedData = typeof newDataAction === 'function' ? newDataAction(dataRef.current) : newDataAction;
+              
+              setData(resolvedData);
 
-                  saveTimeoutRef.current = setTimeout(async () => {
-                      if (user && db && docId && currentDocIdRef.current === docId) {
-                          try {
-                              let docRef;
-                              if (pathType === 'shared') {
-                                  if(collectionName === 'infos') docRef = doc(db, 'artifacts', appId, 'infos', docId);
-                                  else docRef = doc(db, 'artifacts', appId, 'itineraries', docId);
-                              } else {
-                                  docRef = doc(db, 'artifacts', appId, 'users', user.uid, 'data', collectionName, docId);
-                              }
-                                
-                              const safeData = JSON.parse(JSON.stringify(resolvedData));
-                              await setDoc(docRef, { data: safeData }, { merge: true });
-                              
-                              if (currentDocIdRef.current === docId) setSyncStatus('saved');
-                          } catch (e) { 
-                              console.error("Firestore save error:", e); 
-                              if (currentDocIdRef.current === docId) setSyncStatus('error');
+              const localKey = `local_${collectionName}_${docId}`;
+              localStorage.setItem(localKey, JSON.stringify(resolvedData));
+
+              setSyncStatus('saving');
+              
+              if (saveTimeoutRef.current) {
+                  clearTimeout(saveTimeoutRef.current);
+              }
+
+              saveTimeoutRef.current = setTimeout(async () => {
+                  if (user && db && docId && currentDocIdRef.current === docId) {
+                      try {
+                          let docRef;
+                          if (pathType === 'shared') {
+                              if(collectionName === 'infos') docRef = doc(db, 'artifacts', appId, 'infos', docId);
+                              else docRef = doc(db, 'artifacts', appId, 'itineraries', docId);
+                          } else {
+                              docRef = doc(db, 'artifacts', appId, 'users', user.uid, 'data', collectionName, docId);
                           }
-                      } else {
-                          setSyncStatus('saved'); 
+                            
+                          const safeData = JSON.parse(JSON.stringify(resolvedData));
+                          await setDoc(docRef, { data: safeData }, { merge: true });
+                          
+                          if (currentDocIdRef.current === docId) setSyncStatus('saved');
+                      } catch (e) { 
+                          console.error("Firestore save error:", e); 
+                          if (currentDocIdRef.current === docId) setSyncStatus('error');
                       }
-                  }, 500); 
-
-                  return resolvedData;
-              });
+                  } else {
+                      setSyncStatus('saved'); 
+                  }
+              }, 500); 
           }, [user, collectionName, docId, pathType]);
 
           return [data, setValue, isLoaded, syncStatus];
@@ -1034,6 +1012,146 @@
                   )}
                 </div>
               </div>
+          );
+        };
+
+        const TransportCard = ({ data, isEditing, onDelete, onUpdate, isReadOnly, onMoveUp, onMoveDown, isFirst, isLast, onEditStart, onEditEnd, onCopy }) => {
+          const IconComponent = ICON_MAP[data.icon] || Train;
+          const [isEditMode, setIsEditMode] = useState(false);
+          const [editData, setEditData] = useState({ ...data });
+          const handleSave = () => { onUpdate(data.id, editData); setIsEditMode(false); if(onEditEnd) onEditEnd(); };
+          const isWalk = data.icon === 'walk' || data.mode === 'walk';
+
+          return (
+            <div className="flex relative pl-4 pb-6 group">
+              {!isLast && <div className="absolute left-[35px] top-0 bottom-0 w-0.5 border-l-2 border-dashed border-stone-300 z-0"></div>}
+              <div className="w-10 flex flex-col items-center mr-4 shrink-0 z-10 pt-1">
+                  <div className={`w-8 h-8 rounded-full border border-stone-200 shadow-sm flex items-center justify-center text-stone-400 relative z-10 ${data.icon === 'custom' ? 'bg-blue-50 text-blue-600' : 'bg-[#FDFCF8]'}`}>
+                      {renderIconOrClass(data.icon, 14)}
+                  </div>
+              </div>
+              <div className={`flex-1 bg-[#F7F5F0] rounded p-3 border border-stone-100 text-sm flex flex-col relative transition-all z-10 ${isEditing ? 'border-dashed border-stone-300' : ''}`}>
+                {isEditMode ? (
+                  <div className="w-full space-y-2"><input className="w-full p-1 border rounded" value={editData.name} onChange={e=>setEditData({...editData, name:e.target.value})} placeholder="名稱"/><div><label className="text-[10px] text-stone-400 font-bold block mb-1">所需時間</label><input type="text" className="w-full p-1 border rounded text-sm" value={editData.duration || ''} onChange={e=>setEditData({...editData, duration:e.target.value})} placeholder="例如 01:30" /></div><div><label className="text-[10px] text-stone-400 font-bold block mb-1">備註</label><textarea className="w-full p-1 border rounded text-sm" rows={2} value={editData.desc || ''} onChange={e=>setEditData({...editData, desc:e.target.value})} placeholder="備註..." /></div>{!isWalk && (<input className="w-full p-1 border rounded" value={editData.cost} onChange={e=>setEditData({...editData, cost: e.target.value})} placeholder="費用 (例如: ¥2000)"/>)}<div className="flex justify-end gap-2 mt-2"><button onClick={()=>setIsEditMode(false)} className="text-stone-500 text-xs px-2 py-1">取消</button><button onClick={handleSave} className="bg-[#2b4f60] text-white text-xs px-3 py-1 rounded">儲存</button></div></div>
+                ) : (
+                  <div className="flex justify-between items-center w-full"><div><div className="font-bold text-stone-700 flex items-center gap-2 font-serif">{data.name} {data.duration && (<span className="text-[10px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded border border-blue-100 flex items-center gap-1 font-mono"><Clock size={10}/> {data.duration}</span>)}</div><div className="text-xs text-stone-500 mt-0.5 whitespace-pre-wrap">{String(data.desc || '')}</div></div>{!isWalk && (<div className="text-right"><div className="font-bold text-stone-700 font-serif">{data.cost ? (typeof data.cost === 'number' ? data.cost.toLocaleString() : data.cost) : ''}</div></div>)}</div>
+                )}
+                {isEditing && !isEditMode && !isReadOnly && (
+                    <div className="flex gap-2 mt-3 pt-2 border-t border-stone-200/50 w-full items-center">
+                        <button onClick={()=>{setIsEditMode(true); if(onEditStart) onEditStart();}} className="flex-1 bg-white text-stone-600 border border-stone-200 py-1 rounded text-xs font-bold flex items-center justify-center gap-1 hover:bg-stone-50"><Pencil size={10}/> 修改</button>
+                        <button onClick={() => onCopy(data)} className="w-12 bg-white border border-stone-200 text-stone-500 py-1 rounded flex items-center justify-center hover:bg-stone-50" title="複製"><Copy size={10}/></button>
+                        <div className="flex gap-1"><button onClick={onMoveUp} disabled={isFirst} className={`p-1 rounded border border-stone-200 ${isFirst ? 'bg-stone-50 text-stone-300' : 'bg-white text-stone-600 hover:bg-stone-100'}`}><ChevronUp size={10}/></button><button onClick={onMoveDown} disabled={isLast} className={`p-1 rounded border border-stone-200 ${isLast ? 'bg-stone-50 text-stone-300' : 'bg-white text-stone-600 hover:bg-stone-100'}`}><ChevronDown size={10}/></button></div>
+                        <button onClick={onDelete} className="w-8 bg-white text-red-500 border border-stone-200 py-1 rounded flex items-center justify-center hover:bg-red-50"><Trash2 size={10}/></button>
+                    </div>
+                )}
+              </div>
+            </div>
+          );
+        };
+
+        const EventCard = ({ data, onUpdate, isEditing, onDelete, onAutoCoords, isReadOnly, onMoveUp, onMoveDown, isFirst, isLast, onEditStart, onEditEnd, onCopy }) => {
+          const [isExpanded, setIsExpanded] = useState(false);
+          const [isLocalEditing, setIsLocalEditing] = useState(false);
+          const [editData, setEditData] = useState({ ...data });
+          const [tempSubItems, setTempSubItems] = useState("");
+          const [isSearching, setIsSearching] = useState(false);
+          const [showUrlInput, setShowUrlInput] = useState(false);
+          const [newImageUrl, setNewImageUrl] = useState("");
+          const fileInputRef = useRef(null);
+          
+          const isAirport = data.icon === 'airport';
+
+          if (data.type === 'flight') return <FlightCard data={data} isEditing={isEditing} onDelete={onDelete} onUpdate={onUpdate} isReadOnly={isReadOnly} isLast={isLast} onEditStart={onEditStart} onEditEnd={onEditEnd} onMoveUp={onMoveUp} onMoveDown={onMoveDown} isFirst={isFirst} onCopy={onCopy} />;
+          if (data.type === 'transport') return <TransportCard data={data} isEditing={isEditing} onDelete={onDelete} onUpdate={onUpdate} isReadOnly={isReadOnly} isLast={isLast} onEditStart={onEditStart} onEditEnd={onEditEnd} onMoveUp={onMoveUp} onMoveDown={onMoveDown} isFirst={isFirst} onCopy={onCopy} />;
+
+          const handleSave = () => { const newSubItems = tempSubItems.split(/[\n/]/).map(t => t.trim()).filter(Boolean).map(t => ({ text: t, icon: 'star' })); onUpdate(data.id, { ...editData, subItems: newSubItems }); setIsLocalEditing(false); if(onEditEnd) onEditEnd(); };
+          const handleAutoCoords = async () => { 
+              if(onAutoCoords) { 
+                  setIsSearching(true); 
+                  const query = (editData.location && editData.location !== "未設定") ? editData.location : editData.title; 
+                  if (!query || query === "未設定" || query === "新項目") { 
+                      setIsSearching(false); 
+                      alert("請先輸入有效的地點名稱！");
+                      return; 
+                  } 
+                  const coords = await onAutoCoords(query); 
+                  setIsSearching(false); 
+                  if(coords && coords.lat) { 
+                      setEditData({...editData, lat: coords.lat, lng: coords.lng}); 
+                  } else {
+                      alert("找不到該地點的座標，請嘗試輸入更完整的名稱，或檢查 API Key。");
+                  }
+              } 
+          };
+          
+          const handleImageUpload = async (e) => { 
+              const files = Array.from(e.target.files); 
+              if (files.length > 0) { 
+                  const newImages = [];
+                  for (const file of files) {
+                      try {
+                          const compressedBase64 = await compressImage(file);
+                          newImages.push(compressedBase64);
+                      } catch (err) {
+                          console.error("Image compress failed", err);
+                      }
+                  }
+                  setEditData(prev => ({ ...prev, images: [...(prev.images || []), ...newImages] }));
+              } 
+          };
+
+          const handleAddImageUrl = (e) => { e.preventDefault(); if (newImageUrl.trim()) { setEditData(prev => ({ ...prev, images: [...(prev.images || []), newImageUrl.trim()] })); setNewImageUrl(""); setShowUrlInput(false); } };
+          const removeImage = (idx) => { setEditData(prev => ({ ...prev, images: prev.images.filter((_, i) => i !== idx) })); };
+          const [startTime, endTime] = (editData.time || '').split('-').map(s => s.trim());
+          const handleTimeChange = (type, val) => { let [s, e] = (editData.time || '').split('-').map(str => str.trim()); if (type === 'start') s = val; if (type === 'end') e = val; setEditData({ ...editData, time: `${s || '00:00'}-${e || '00:00'}` }); };
+
+          return (
+            <div className="flex relative pl-4 pb-6 group">
+              {!isLast && <div className="absolute left-[35px] top-8 bottom-0 w-0.5 border-l-2 border-dashed border-stone-300 z-0"></div>}
+              <div className={`w-10 flex flex-col items-center mr-4 shrink-0 z-10 pt-1`}>
+                  <div className={`w-[38px] h-[38px] rounded-full shadow-sm flex items-center justify-center border-2 border-[#FDFCF8] relative z-10 ${getIconStyle(data.icon)}`}>{renderIconOrClass(data.icon, isAirport ? 22 : 14)}</div>
+              </div>
+              <div className={`flex-1 rounded-xl shadow-sm border bg-[#FDFCF8] overflow-hidden relative transition-all z-10 ${isLocalEditing ? 'ring-2 ring-[#2b4f60]/20' : ''} ${data.highlight ? 'border-[#B74B4B]/30' : 'border-stone-100'}`}>
+                <div className="p-4">
+                  {isLocalEditing ? (
+                      <div className="space-y-2"><input className="w-full font-bold p-1 border rounded" value={editData.title} onChange={e=>setEditData({...editData, title: e.target.value})} placeholder="標題" />
+                      <div className="flex items-center gap-2"><div className="flex-1"><label className="text-[10px] text-stone-400 font-bold block mb-1">開始時間</label><input type="time" className="w-full p-1 border rounded text-sm" value={startTime || ''} onChange={(e) => handleTimeChange('start', e.target.value)} /></div><span className="text-stone-400 pt-4">-</span><div className="flex-1"><label className="text-[10px] text-stone-400 font-bold block mb-1">結束時間</label><input type="time" className="w-full p-1 border rounded text-sm" value={endTime || ''} onChange={(e) => handleTimeChange('end', e.target.value)} /></div></div>
+                      <input className="w-full text-xs p-1 border rounded" value={editData.location} onChange={e=>setEditData({...editData, location: e.target.value})} placeholder="地點 (輸入完整以利 AI 搜尋)" />
+                      <input className="w-full text-xs p-1 border rounded text-blue-600" value={editData.link || ''} onChange={e=>setEditData({...editData, link: e.target.value})} placeholder="相關連結 (URL)" />
+                      <div className="flex gap-2"><input className="w-1/3 text-xs p-1 border rounded bg-stone-50" value={editData.lat || ''} onChange={e=>setEditData({...editData, lat: e.target.value})} placeholder="緯度" /><input className="w-1/3 text-xs p-1 border rounded bg-stone-50" value={editData.lng || ''} onChange={e=>setEditData({...editData, lng: e.target.value})} placeholder="經度" /><button onClick={handleAutoCoords} disabled={isSearching} onMouseDown={(e) => e.stopPropagation()} className="flex-1 px-2 bg-indigo-100 text-indigo-700 rounded text-xs whitespace-nowrap flex items-center justify-center gap-1 hover:bg-indigo-200 disabled:opacity-50 font-bold border border-indigo-200">{isSearching ? <Loader2 size={12} className="animate-spin"/> : <React.Fragment><Star size={12}/> AI 找座標</React.Fragment>}</button></div>
+                      <textarea className="w-full text-sm p-1 border rounded" rows={3} value={editData.desc} onChange={e=>setEditData({...editData, desc: e.target.value})} placeholder="描述..." />
+                      <div className="bg-stone-50 p-2 rounded border border-stone-200"><div className="flex items-center gap-2 mb-2"><label className="cursor-pointer bg-white border border-stone-300 text-stone-600 px-2 py-1 rounded text-xs font-bold flex items-center gap-1 hover:bg-stone-100"><input type="file" ref={fileInputRef} className="hidden" accept="image/*" multiple onChange={handleImageUpload} /><Upload size={12} /> 相簿/檔案</label><button onClick={() => setShowUrlInput(!showUrlInput)} className="bg-white border border-stone-300 text-stone-600 px-2 py-1 rounded text-xs font-bold flex items-center gap-1 hover:bg-stone-100"><LinkIcon size={12} /> 圖片連結</button></div>{showUrlInput && (<div className="flex gap-1 mb-2"><input className="flex-1 text-xs border rounded p-1" value={newImageUrl} onChange={e=>setNewImageUrl(e.target.value)} placeholder="https://..." /><button onClick={handleAddImageUrl} type="button" className="bg-blue-600 text-white px-2 rounded text-xs">加入</button></div>)}{editData.images && editData.images.length > 0 && (<div className="flex gap-2 overflow-x-auto pb-1">{editData.images.map((img, idx) => (<div key={idx} className="relative shrink-0 w-16 h-16 group"><img src={img} className="w-full h-full object-cover rounded border border-stone-200" /><button onClick={() => removeImage(idx)} className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-0.5 shadow opacity-0 group-hover:opacity-100 transition-opacity"><X size={10} /></button></div>))}</div>)}</div>
+                      <div><label className="text-xs font-bold text-stone-500 mb-1 block ml-1">推薦/子項目 (換行分隔)</label><textarea className="w-full text-xs p-2 border rounded bg-stone-50" rows={3} value={tempSubItems} onChange={(e) => setTempSubItems(e.target.value)} placeholder="例: 必吃布丁
+買伴手禮
+拍照點" /></div>
+                      <div className="flex justify-end gap-2 mt-2"><button onClick={()=>setIsLocalEditing(false)} className="text-stone-500 text-xs px-2 py-1">取消</button><button onClick={handleSave} className="bg-[#2b4f60] text-white text-xs px-3 py-1 rounded">儲存</button></div></div>
+                  ) : (
+                    <React.Fragment>
+                      <div className="flex justify-between items-start mb-1"><div className="flex items-center gap-2"><span className="text-sm font-bold text-[#2b4f60] font-mono bg-stone-100 px-1.5 py-0.5 rounded">{data.time}</span><h3 className={`font-bold text-base font-serif ${data.highlight ? 'text-[#B74B4B]' : 'text-[#2C3E50]'}`}>{String(data.title || '')}</h3></div><div className="flex items-center gap-2">{data.link && <a href={data.link} target="_blank" rel="noreferrer" className="text-stone-400 hover:text-blue-600 bg-stone-50 p-1 rounded-full"><LinkIcon size={14} /></a>}<a href={getMapLink(data.location)} target="_blank" className="text-stone-400 hover:text-blue-600 bg-stone-50 p-1 rounded-full"><Navigation size={14} /></a></div></div>
+                      <div className="text-xs text-stone-500 flex items-center gap-1 mb-2 ml-1"><MapPin size={10} /> {String(data.location || '')}</div>
+                      
+                      {isExpanded && (
+                          <div className="animate-fade-in">
+                              <p className="text-sm text-stone-600 leading-relaxed ml-1 whitespace-pre-wrap">{String(data.desc || '')}</p>
+                              {data.images && data.images.length > 0 && (<div className="mt-3 ml-1 flex gap-2 overflow-x-auto pb-2 no-scrollbar">{data.images.map((img, idx) => (<img key={idx} src={img} className="h-20 w-auto rounded-lg shadow-sm border border-stone-100 object-cover cursor-pointer hover:scale-105 transition-transform" onClick={() => window.open(img, '_blank')} />))}</div>)}
+                              {data.subItems && Array.isArray(data.subItems) && data.subItems.length > 0 && (<div className="mt-3 space-y-1.5 bg-[#F7F5F0] p-3 rounded-lg border border-stone-100"><div className="text-[10px] text-stone-400 font-bold mb-1 flex items-center gap-1"><Star size={10}/> 必吃必買推薦</div>{data.subItems.map((item, idx) => { const SubIcon = ICON_MAP[item.icon] || MapPin; return ( <div key={idx} className="flex items-center gap-2 text-xs text-stone-600 font-medium"><SubIcon size={12} className="text-[#B74B4B]" /> {String(item.text || '')}</div> ); })}</div>)}
+                          </div>
+                      )}
+
+                      <div className="flex justify-between items-center mt-2 border-t border-stone-50 pt-1"><button onClick={() => setIsExpanded(!isExpanded)} className="text-[10px] text-[#2b4f60] font-bold hover:underline w-full text-center py-1" onMouseDown={(e) => e.stopPropagation()}>{isExpanded ? '收起' : '詳細'}</button></div>
+                      {isEditing && !isReadOnly && (
+                          <div className="flex gap-2 mt-2 pt-2 border-t border-stone-100 items-center">
+                              <button onClick={()=>{setTempSubItems(data.subItems ? data.subItems.map(i => i.text).join("\n") : ""); setIsLocalEditing(true); if(onEditStart) onEditStart();}} className="flex-1 bg-stone-100 text-stone-600 py-1.5 rounded text-xs font-bold flex items-center justify-center gap-1 hover:bg-stone-200"><Pencil size={12}/> 修改</button>
+                              <button onClick={() => onCopy(data)} className="w-12 bg-white text-stone-500 border border-stone-200 py-1.5 rounded flex items-center justify-center hover:bg-stone-100" title="複製"><Copy size={12}/></button>
+                              <div className="flex gap-1 border-l border-stone-200 pl-2"><button onClick={onMoveUp} disabled={isFirst} className={`p-1.5 rounded border border-stone-200 ${isFirst ? 'bg-stone-50 text-stone-300' : 'bg-white text-stone-600 hover:bg-stone-100'}`}><ChevronUp size={14}/></button><button onClick={onMoveDown} disabled={isLast} className={`p-1.5 rounded border border-stone-200 ${isLast ? 'bg-stone-50 text-stone-300' : 'bg-white text-stone-600 hover:bg-stone-100'}`}><ChevronDown size={14}/></button></div>
+                              <button onClick={onDelete} className="w-8 bg-white text-red-500 border border-stone-200 py-1.5 rounded flex items-center justify-center hover:bg-red-200"><Trash2 size={12}/></button>
+                          </div>
+                      )}
+                    </React.Fragment>
+                  )}
+                </div>
+              </div>
+            </div>
           );
         };
         const CopyTargetDialog = ({ isOpen, itinerary, onClose, onConfirm }) => {
