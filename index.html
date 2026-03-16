@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Trip App (V15.2 Complete)</title>
+    <title>Trip App (V15.3 Collab Sync)</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -411,20 +411,6 @@
           { id: 'info-5', type: 'rule', title: '> 160Wh', content: '禁止攜帶', status: 'error' },
           { id: 'info-6', type: 'note', title: '緊急聯絡', content: '外交部旅外救助: +81-3-3280-7811', sub: '日本報案: 110 / 火警: 119' },
         ];
-
-        const DEFAULT_PACKING_LIST = [
-          { id: 1, text: "護照 & 身分證", checked: false, category: "證件" },
-          { id: 2, text: "日幣現金 & 信用卡", checked: false, category: "錢包" },
-          { id: 3, text: "網卡 / Esim", checked: false, category: "通訊" },
-          { id: 4, text: "Visit Japan Web截圖", checked: false, category: "證件" },
-          { id: 5, text: "行動電源 & 充電線", checked: false, category: "3C" },
-          { id: 6, text: "好走的鞋子 (日行2萬步)", checked: false, category: "衣物" },
-          { id: 7, text: "常備藥品", checked: false, category: "生活" },
-          { id: 8, text: "盥洗用品", checked: false, category: "生活" },
-          { id: 9, text: "摺疊傘 (晴雨兩用)", checked: false, category: "生活" },
-          { id: 10, text: "購物袋 (環保袋)", checked: false, category: "生活" },
-        ];
-
         const INITIAL_ITINERARY_DATA = [
           {
             day: 1, date: "7/6 (日)", city: "東京", defaultLat: 35.6895, defaultLng: 139.6917, title: "啟程與澀谷夕陽", themeColor: "indigo",
@@ -509,6 +495,30 @@
             ]
           },
         ];
+
+        let db, auth;
+        let appId = "trip-app-d63a2"; 
+
+        try {
+          let firebaseConfig = null;
+          if (YOUR_FIREBASE_CONFIG.apiKey && YOUR_FIREBASE_CONFIG.appId) {
+             firebaseConfig = YOUR_FIREBASE_CONFIG;
+          } 
+          else if (typeof __firebase_config !== 'undefined') {
+             firebaseConfig = JSON.parse(__firebase_config);
+          }
+
+          if (firebaseConfig) {
+              const app = initializeApp(firebaseConfig);
+              auth = getAuth(app);
+              db = getFirestore(app);
+              if (firebaseConfig.measurementId) {
+                  getAnalytics(app);
+              }
+              if (firebaseConfig.projectId) appId = firebaseConfig.projectId;
+          }
+        } catch (e) { console.log("Firebase Init Error:", e); }
+
         const usePersistentData = (collectionName, docId, initialValue, user, pathType='private') => {
           const currentDocIdRef = useRef(docId); 
           const [data, setData] = useState(() => JSON.parse(JSON.stringify(initialValue)));
@@ -634,19 +644,38 @@
           if (localApiKey) {
             try {
               const prompt = `Find the precise latitude and longitude for "${location}". Return ONLY a valid JSON object with "lat" and "lng" number properties. Example: {"lat": 35.6895, "lng": 139.6917}. Do not include markdown code blocks or any other text.`;
-              const response = await fetchWithBackoff(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${localApiKey}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) });
+              
+              const response = await fetchWithBackoff(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${localApiKey}`, { 
+                  method: 'POST', 
+                  headers: { 'Content-Type': 'application/json' }, 
+                  body: JSON.stringify({ 
+                      contents: [{ parts: [{ text: prompt }] }] 
+                  }) 
+              });
+              
               if (response.ok) {
                   const data = await response.json();
                   let text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-                  if (text) { text = text.replace(/```json/g, '').replace(/```/g, '').trim(); const jsonMatch = text.match(/\{[\s\S]*\}/); if (jsonMatch) { return JSON.parse(jsonMatch[0]); } }
+                  if (text) { 
+                      text = text.replace(/```json/g, '').replace(/```/g, '').trim();
+                      const jsonMatch = text.match(/\{[\s\S]*\}/); 
+                      if (jsonMatch) { 
+                          return JSON.parse(jsonMatch[0]); 
+                      } 
+                  }
               }
-            } catch (e) { console.warn("AI Geocoding skipped:", e.message); }
+            } catch (e) { 
+                console.warn("AI Geocoding failed:", e.message); 
+            }
           } 
+          
           try {
             const geoRes = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(location)}&count=1&language=zh&format=json`);
             const geoData = await geoRes.json();
             if (geoData.results?.length > 0) return { lat: geoData.results[0].latitude, lng: geoData.results[0].longitude };
-          } catch (e) { console.error("Standard Geocoding failed:", e); }
+          } catch (e) { 
+              console.error("Standard Geocoding failed:", e); 
+          }
           return null;
         };
 
@@ -999,6 +1028,8 @@
           const [editData, setEditData] = useState({ ...data });
           const handleSave = () => { onUpdate(data.id, editData); setIsEditMode(false); if(onEditEnd) onEditEnd(); };
           
+          useEffect(() => { if (!isEditMode) setEditData({ ...data }); }, [data, isEditMode]);
+
           return (
               <div className="flex relative pl-4 pb-6 group">
                 {!isLast && <div className="absolute left-[35px] top-0 bottom-0 w-0.5 border-l-2 border-dashed border-stone-300 z-0"></div>}
@@ -1033,6 +1064,8 @@
           const [editData, setEditData] = useState({ ...data });
           const handleSave = () => { onUpdate(data.id, editData); setIsEditMode(false); if(onEditEnd) onEditEnd(); };
           const isWalk = data.icon === 'walk' || data.mode === 'walk';
+          
+          useEffect(() => { if (!isEditMode) setEditData({ ...data }); }, [data, isEditMode]);
 
           return (
             <div className="flex relative pl-4 pb-6 group">
@@ -1072,6 +1105,14 @@
           const fileInputRef = useRef(null);
           
           const isAirport = data.icon === 'airport';
+
+          // ✨ 關鍵修復：只有在「沒有正在編輯」時，才去同步雲端傳來的新資料，防止覆蓋正在打字的內容！
+          useEffect(() => {
+              if (!isLocalEditing) {
+                  setEditData({ ...data });
+                  setTempSubItems(data.subItems ? data.subItems.map(i => i.text).join("\n") : "");
+              }
+          }, [data, isLocalEditing]);
 
           if (data.type === 'flight') return <FlightCard data={data} isEditing={isEditing} onDelete={onDelete} onUpdate={onUpdate} isReadOnly={isReadOnly} isLast={isLast} onEditStart={onEditStart} onEditEnd={onEditEnd} onMoveUp={onMoveUp} onMoveDown={onMoveDown} isFirst={isFirst} onCopy={onCopy} />;
           if (data.type === 'transport') return <TransportCard data={data} isEditing={isEditing} onDelete={onDelete} onUpdate={onUpdate} isReadOnly={isReadOnly} isLast={isLast} onEditStart={onEditStart} onEditEnd={onEditEnd} onMoveUp={onMoveUp} onMoveDown={onMoveDown} isFirst={isFirst} onCopy={onCopy} />;
@@ -1647,8 +1688,8 @@
 
           const getActiveRouteKey = (day, currentRouteState) => { if (!day.hasRoutes) return null; const keys = Object.keys(day.routes); return (currentRouteState && day.routes[currentRouteState]) ? currentRouteState : keys[0]; };
           
-          const handleAddTrip = (newTrip) => { const dateStr = newTrip.date.replace(/\D/g, ''); const visitorCode = Math.random().toString(36).substring(2, 6).toUpperCase(); const id = `trip-${dateStr}-#${visitorCode}`; const trip = { id, title: newTrip.title, date: newTrip.date, cover: newTrip.cover || THEME_COLORS[0].value, emoji: newTrip.emoji || "✈️", status: "planning", days: 1 }; setTrips([...(Array.isArray(trips) ? trips : []), trip]); if(user && db) { setDoc(doc(db, 'artifacts', appId, 'itineraries', id), { data: [{ day: 1, date: "Day 1", city: "城市", title: "旅程開始", themeColor: "gray", timeline: [] }] }); } };
-          const handleEditTrip = (id, updatedData) => { setTrips((Array.isArray(trips) ? trips : []).map(t => t.id === id ? { ...t, ...updatedData } : t)); };
+          const handleAddTrip = (newTrip) => { const dateStr = newTrip.date.replace(/\D/g, ''); const visitorCode = Math.random().toString(36).substring(2, 6).toUpperCase(); const id = `trip-${dateStr}-#${visitorCode}`; const tripMeta = { title: newTrip.title, date: newTrip.date, cover: newTrip.cover || THEME_COLORS[0].value, emoji: newTrip.emoji || "✈️" }; const trip = { id, ...tripMeta, status: "planning", days: 1 }; setTrips([...(Array.isArray(trips) ? trips : []), trip]); if(user && db) { setDoc(doc(db, 'artifacts', appId, 'itineraries', id), { data: [{ day: 1, date: "Day 1", city: "城市", title: "旅程開始", themeColor: "gray", timeline: [] }], meta: tripMeta }); } };
+          const handleEditTrip = (id, updatedData) => { setTrips((Array.isArray(trips) ? trips : []).map(t => t.id === id ? { ...t, ...updatedData } : t)); if(user && db) { setDoc(doc(db, 'artifacts', appId, 'itineraries', id), { meta: updatedData }, { merge: true }); } };
           const handleDeleteTrip = (id) => { setTrips((Array.isArray(trips) ? trips : []).filter(t => t.id !== id)); }; 
           
           const handleShareTrip = async (tripId) => {
@@ -1667,25 +1708,38 @@
               
               const safeTrips = Array.isArray(trips) ? trips : [];
               const exists = safeTrips.find(t => t.id === code);
+              
               if (!exists) {
-                  setTrips([...safeTrips, { id: code, title: "協作行程 (點擊編輯)", date: "未設定", emoji: "🔗", cover: THEME_COLORS[0].value }]);
+                  let newTrip = { id: code, title: "協作行程 (同步中...)", date: "未設定", emoji: "🔗", cover: THEME_COLORS[0].value };
+                  if (db) {
+                      try {
+                          const docRef = doc(db, 'artifacts', appId, 'itineraries', code);
+                          const docSnap = await getDoc(docRef);
+                          if (docSnap.exists() && docSnap.data().meta) {
+                              newTrip = { id: code, ...docSnap.data().meta };
+                          }
+                      } catch(e) { console.error("Fetch meta error:", e); }
+                  }
+                  
+                  setTrips(prev => {
+                      const safe = Array.isArray(prev) ? prev : [];
+                      if(safe.find(t => t.id === code)) return safe;
+                      return [...safe, newTrip];
+                  });
               }
               
               setCurrentTripId(code);
               setIsReadOnly(isViewOnly);
               setActiveDay(1);
-              if(!isViewOnly) {
-                  alert("已加入行程協作！\n💡 小提示：您可以在首頁點擊「鉛筆圖示」自訂此行程的顯示名稱與日期。");
-              }
+              
+              window.history.replaceState({}, document.title, window.location.pathname);
           };
 
           const handleAddDay = () => { if(isReadOnly) return; const safeItin = Array.isArray(itinerary) ? itinerary : []; const newDayNum = safeItin.length + 1; const newDay = { day: newDayNum, date: `Day ${newDayNum}`, city: "城市", title: "新的一天", themeColor: "gray", timeline: [] }; updateCurrentItinerary([...safeItin, newDay]); setActiveDay(newDayNum); };
           
           const handleUpdateDayInfo = () => { 
               if(isReadOnly) return; 
-              const newItinerary = (Array.isArray(itinerary) ? itinerary : []).map(d => d.day === activeDay ? { ...d, ...editDayData } : d); 
-              updateCurrentItinerary(newItinerary); 
-              setIsEditingDay(false); 
+              (false); 
           };
           
           const handleMoveDay = (dayNum, direction) => {
@@ -1719,7 +1773,7 @@
           
           useEffect(() => { if (scrollRef.current && view === 'itinerary') { const activeBtn = scrollRef.current.children[activeDay - 1]; if (activeBtn) activeBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' }); } }, [activeDay, view]);
           
-          const handleAddItem = () => { if(isReadOnly) return; let itemType = 'event'; if (newEventData.iconType === 'plane') { itemType = 'flight'; } else if (['train','bus','walk','taxi','ship','subway','bike','car','custom'].includes(newEventData.iconType)) { itemType = 'transport'; } const newItem = { id: `new-${Date.now()}`, type: itemType, time: "00:00", title: newEventData.title || (itemType === 'flight' ? "航班號" : "新項目"), location: "未設定", desc: "點擊編輯...", icon: newEventData.iconType, mode: newEventData.iconType, cost: 0, lat: null, lng: null, airline: itemType === 'flight' ? "航空公司" : undefined, depTime: itemType === 'flight' ? "10:00" : undefined, depLoc: itemType === 'flight' ? "TPE" : undefined, arrTime: itemType === 'flight' ? "14:00" : undefined, arrLoc: itemType === 'flight' ? "KIX" : undefined }; const newItinerary = (Array.isArray(itinerary) ? itinerary : []).map(day => { if (day.day!== activeDay) return day; if (day.hasRoutes) { const currentRouteKey = getActiveRouteKey(day, route); return { ...day, routes: { ...day.routes, [currentRouteKey]: { ...day.routes[currentRouteKey], timeline: [...(day.routes[currentRouteKey].timeline || []), newItem] } } }; } return { ...day, timeline: [...(day.timeline || []), newItem] }; }); updateCurrentItinerary(newItinerary); setShowAddModal(false); setEditingItemId(newItem.id); setTimeout(() => { const el = document.getElementById(newItem.id); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 100); };
+          const handleAddItem = () => { if(isReadOnly) return; let itemType = 'event'; if (newEventData.iconType === 'plane') { itemType = 'flight'; } else if (['train','bus','walk','taxi','ship','subway','bike','car','custom'].includes(newEventData.iconType)) { itemType = 'transport'; } const newItem = { id: `new-${Date.now()}`, type: itemType, time: "00:00", title: newEventData.title || (itemType === 'flight' ? "航班號" : "新項目"), location: "未設定", desc: "點擊編輯...", icon: newEventData.iconType, mode: newEventData.iconType, cost: 0, lat: null, lng: null, airline: itemType === 'flight' ? "航空公司" : undefined, depTime: itemType === 'flight' ? "10:00" : undefined, depLoc: itemType === 'flight' ? "TPE" : undefined, arrTime: itemType === 'flight' ? "14:00" : undefined, arrLoc: itemType === 'flight' ? "KIX" : undefined }; const newItinerary = (Array.isArray(itinerary) ? itinerary : []).map(day => { if (day.day !== activeDay) return day; if (day.hasRoutes) { const currentRouteKey = getActiveRouteKey(day, route); return { ...day, routes: { ...day.routes, [currentRouteKey]: { ...day.routes[currentRouteKey], timeline: [...(day.routes[currentRouteKey].timeline || []), newItem] } } }; } return { ...day, timeline: [...(day.timeline || []), newItem] }; }); updateCurrentItinerary(newItinerary); setShowAddModal(false); setEditingItemId(newItem.id); setTimeout(() => { const el = document.getElementById(newItem.id); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 100); };
           const handleHideEvent = (id) => { if(isReadOnly) return; const newItinerary = (Array.isArray(itinerary) ? itinerary : []).map(day => { if (day.day !== activeDay) return day; if (day.hasRoutes) { const currentKey = getActiveRouteKey(day, route); const newTimeline = (day.routes[currentKey].timeline || []).map(t => t.id === id ? { ...t, hideOnMap: true } : t); return { ...day, routes: { ...day.routes, [currentKey]: { ...day.routes[currentKey], timeline: newTimeline } } }; } else { const newTimeline = (day.timeline || []).map(t => t.id === id ? { ...t, hideOnMap: true } : t); return { ...day, timeline: newTimeline }; } }); updateCurrentItinerary(newItinerary); };
           const handleRenameRoute = (key, newName) => { if(isReadOnly) return; const newItinerary = (Array.isArray(itinerary) ? itinerary : []).map(d => { if (d.day !== activeDay) return d; return { ...d, routes: { ...d.routes, [key]: { ...d.routes[key], name: newName } } }; }); updateCurrentItinerary(newItinerary); };
           const handleDeleteRoute = (key) => { if(isReadOnly) return; setConfirmDialog({ isOpen: true, id: key, type: 'route' }); };
@@ -1776,7 +1830,7 @@
           const safeTrips = Array.isArray(trips) ? trips : [];
           if (!currentTripId) { return ( <HomeView trips={safeTrips} onSelectTrip={(id)=>{ setIsReadOnly(false); setCurrentTripId(id); setActiveDay(1); }} onAddTrip={handleAddTrip} onEditTrip={handleEditTrip} onDeleteTrip={handleDeleteTrip} onShareTrip={handleShareTrip} onJoinTrip={handleJoinTrip} user={user} /> ); }
           
-          if (!currentData && (Array.isArray(itinerary) ? itinerary : []).length > 0) { setActiveDay(itinerary[0].day); return <div className="p-10 text-center"><Loader2 className="animate-spin w-8 h-8 mx-auto mb-2 text-[#2b4f60]"/>載入中...</div>; }
+          if (!currentData && (Array.isArray(itinerary) ? itinerary : []).length > 0) { setActiveDay((Array.isArray(itinerary) ? itinerary : [])[0]?.day || 1); return <div className="p-10 text-center"><Loader2 className="animate-spin w-8 h-8 mx-auto mb-2 text-[#2b4f60]"/>載入中...</div>; }
           if (!currentData) return <div className="p-10 text-center">初始化行程...</div>; 
 
           return (
@@ -1808,7 +1862,7 @@
                   {view === 'itinerary' && (
                       <>
                           <div className="w-full relative shrink-0 transition-all duration-300 z-0 border-b border-stone-200 shadow-sm" style={{ height: '40vh' }}>
-                            <LeafletMap itinerary={itinerary} activeDay={activeDay} onMarkerDrag={handleMarkerDrag} isEditMode={isMapEditMode && !isReadOnly} onToggleEditMode={() => setIsMapEditMode(!isMapEditMode)} onEventUpdate={handleUpdateEvent} onHideEvent={handleHideEvent} onMarkerClick={(item) => !isReadOnly && setMapEditDialog({isOpen: true, data: item})} />
+                            <LeafletMap itinerary={Array.isArray(itinerary) ? itinerary : []} activeDay={activeDay} onMarkerDrag={handleMarkerDrag} isEditMode={isMapEditMode && !isReadOnly} onToggleEditMode={() => setIsMapEditMode(!isMapEditMode)} onEventUpdate={handleUpdateEvent} onHideEvent={handleHideEvent} onMarkerClick={(item) => !isReadOnly && setMapEditDialog({isOpen: true, data: item})} />
                           </div>
                           <div className="animate-fade-in pb-24 bg-[#f4f4f0] relative z-10">
                             <div className="bg-[#FDFCF8]/95 backdrop-blur-sm border-b border-stone-200 shadow-sm sticky top-0 z-20">
