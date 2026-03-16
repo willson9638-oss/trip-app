@@ -509,7 +509,6 @@
             ]
           },
         ];
-
         const usePersistentData = (collectionName, docId, initialValue, user, pathType='private') => {
           const currentDocIdRef = useRef(docId); 
           const [data, setData] = useState(() => JSON.parse(JSON.stringify(initialValue)));
@@ -622,19 +621,39 @@
           let localApiKey = localStorage.getItem('gemini_api_key');
           if (localApiKey) {
             try {
-              const prompt = `Find the precise latitude and longitude for "${location}". Return ONLY raw JSON: {"lat": 35.123, "lng": 139.123}.`;
-              const response = await fetchWithBackoff(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${localApiKey}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], tools: [{ googleSearch: {} }] }) });
-              if (!response.ok) return { error: 'INVALID_KEY' };
-              const data = await response.json();
-              let text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-              if (text) { const jsonMatch = text.match(/\{[\s\S]*\}/); if (jsonMatch) { return JSON.parse(jsonMatch[0]); } }
-            } catch (e) { console.warn("AI Geocoding skipped:", e.message); }
+              const prompt = `Find the precise latitude and longitude for "${location}". Return ONLY a valid JSON object with "lat" and "lng" number properties. Example: {"lat": 35.6895, "lng": 139.6917}. Do not include markdown code blocks or any other text.`;
+              
+              const response = await fetchWithBackoff(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${localApiKey}`, { 
+                  method: 'POST', 
+                  headers: { 'Content-Type': 'application/json' }, 
+                  body: JSON.stringify({ 
+                      contents: [{ parts: [{ text: prompt }] }] 
+                  }) 
+              });
+              
+              if (response.ok) {
+                  const data = await response.json();
+                  let text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                  if (text) { 
+                      text = text.replace(/```json/g, '').replace(/```/g, '').trim();
+                      const jsonMatch = text.match(/\{[\s\S]*\}/); 
+                      if (jsonMatch) { 
+                          return JSON.parse(jsonMatch[0]); 
+                      } 
+                  }
+              }
+            } catch (e) { 
+                console.warn("AI Geocoding failed:", e.message); 
+            }
           } 
+          
           try {
             const geoRes = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(location)}&count=1&language=zh&format=json`);
             const geoData = await geoRes.json();
             if (geoData.results?.length > 0) return { lat: geoData.results[0].latitude, lng: geoData.results[0].longitude };
-          } catch (e) { console.error("Standard Geocoding failed:", e); }
+          } catch (e) { 
+              console.error("Standard Geocoding failed:", e); 
+          }
           return null;
         };
 
@@ -1065,6 +1084,7 @@
           if (data.type === 'transport') return <TransportCard data={data} isEditing={isEditing} onDelete={onDelete} onUpdate={onUpdate} isReadOnly={isReadOnly} isLast={isLast} onEditStart={onEditStart} onEditEnd={onEditEnd} onMoveUp={onMoveUp} onMoveDown={onMoveDown} isFirst={isFirst} onCopy={onCopy} />;
 
           const handleSave = () => { const newSubItems = tempSubItems.split(/[\n/]/).map(t => t.trim()).filter(Boolean).map(t => ({ text: t, icon: 'star' })); onUpdate(data.id, { ...editData, subItems: newSubItems }); setIsLocalEditing(false); if(onEditEnd) onEditEnd(); };
+          
           const handleAutoCoords = async () => { 
               if(onAutoCoords) { 
                   setIsSearching(true); 
@@ -1868,7 +1888,36 @@
                   {view === 'info' && <InfoView tripId={currentTripId} user={user} />}
               </div>
               
-              {showAddModal && (<div className="fixed inset-0 bg-black/50 z-[2000] flex items-center justify-center p-6 backdrop-blur-sm"><div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl h-[80vh] flex flex-col"><h3 className="text-lg font-bold mb-4">新增{newEventData.type === 'event' ? '行程' : '交通'}</h3><input className="w-full border rounded p-2 mb-4" placeholder="標題/名稱" value={newEventData.title} onChange={e=>setNewEventData({...newEventData, title: e.target.value})} /><div className="flex-1 overflow-y-auto mb-4">{Object.entries(ICON_CATEGORIES).map(([key, category]) => (<div key={key} className="mb-4"><h4 className="text-xs font-bold text-stone-500 mb-2">{category.title}</h4><div className="grid grid-cols-4 gap-2">{category.icons.map(iconItem => { const IconComponent = ICON_MAP[iconItem.id] || MapPin; return ( <button key={iconItem.id} onClick={() => setNewEventData({ ...newEventData, iconType: iconItem.id, type: key === 'transport' ? 'transport' : 'event' })} className={`flex flex-col items-center justify-center p-2 rounded border transition-all ${newEventData.iconType === iconItem.id ? 'bg-[#2b4f60] text-white border-[#2b4f60]' : 'bg-white text-stone-400 hover:bg-stone-50'}`}>{iconItem.id === 'custom' ? <span className="text-lg font-bold">↝</span> : <IconComponent size={20}/>}<span className="text-[10px] mt-1">{iconItem.label}</span></button> ); })}</div></div>))}</div><div className="flex gap-2 mt-auto"><button onClick={() => setShowAddModal(false)} className="flex-1 py-3 border rounded text-stone-500 font-bold">取消</button><button onClick={handleAddItem} className="flex-1 py-3 bg-[#2b4f60] text-white rounded font-bold shadow-lg">確認</button></div></div></div>)}
+              {showAddModal && (
+                  <div className="fixed inset-0 bg-black/50 z-[2000] flex items-center justify-center p-6 backdrop-blur-sm">
+                      <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl h-[80vh] flex flex-col">
+                          <h3 className="text-lg font-bold mb-4">新增{newEventData.type === 'event' ? '行程' : '交通'}</h3>
+                          <input className="w-full border rounded p-2 mb-4" placeholder="標題/名稱" value={newEventData.title} onChange={e=>setNewEventData({...newEventData, title: e.target.value})} />
+                          <div className="flex-1 overflow-y-auto mb-4">
+                              {Object.entries(ICON_CATEGORIES).map(([key, category]) => (
+                                  <div key={key} className="mb-4">
+                                      <h4 className="text-xs font-bold text-stone-500 mb-2">{category.title}</h4>
+                                      <div className="grid grid-cols-4 gap-2">
+                                          {category.icons.map(iconItem => { 
+                                              const IconComponent = ICON_MAP[iconItem.id] || MapPin; 
+                                              return ( 
+                                                  <button key={iconItem.id} onClick={() => setNewEventData({ ...newEventData, iconType: iconItem.id, type: key === 'transport' ? 'transport' : 'event' })} className={`flex flex-col items-center justify-center p-2 rounded border transition-all ${newEventData.iconType === iconItem.id ? 'bg-[#2b4f60] text-white border-[#2b4f60]' : 'bg-white text-stone-400 hover:bg-stone-50'}`}>
+                                                      {iconItem.id === 'custom' ? <span className="text-lg font-bold">↝</span> : <IconComponent size={20}/>}
+                                                      <span className="text-[10px] mt-1">{iconItem.label}</span>
+                                                  </button> 
+                                              ); 
+                                          })}
+                                      </div>
+                                  </div>
+                              ))}
+                          </div>
+                          <div className="flex gap-2 mt-auto">
+                              <button onClick={() => setShowAddModal(false)} className="flex-1 py-3 border rounded text-stone-500 font-bold">取消</button>
+                              <button onClick={handleAddItem} className="flex-1 py-3 bg-[#2b4f60] text-white rounded font-bold shadow-lg">確認</button>
+                          </div>
+                      </div>
+                  </div>
+              )}
               <Dialog isOpen={confirmDialog.isOpen} title={confirmDialog.type === 'route' ? "刪除路線" : "刪除項目"} message={confirmDialog.type === 'route' ? "確定要刪除此分歧路線嗎？" : "確定要刪除此行程項目嗎？此動作無法復原。"} onConfirm={executeDelete} onCancel={() => setConfirmDialog({ isOpen: false, id: null, type: 'item' })} type="confirm" />
               <MapMarkerEditDialog isOpen={mapEditDialog.isOpen} data={mapEditDialog.data} onClose={() => setMapEditDialog({isOpen: false, data: null})} onSave={(id, data) => handleUpdateEvent(id, data)} onDelete={(id) => { confirmDelete(id); setMapEditDialog({isOpen: false, data: null}); }} />
               <CopyTargetDialog isOpen={copyDialog.isOpen} itinerary={itinerary} onClose={() => setCopyDialog({ isOpen: false, item: null })} onConfirm={executeCopy} />
