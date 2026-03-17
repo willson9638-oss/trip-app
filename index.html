@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Trip App (V15.3 Collab Sync)</title>
+    <title>Trip App (V15.3 Collab Sync & API Fix)</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -496,29 +496,6 @@
           },
         ];
 
-        let db, auth;
-        let appId = "trip-app-d63a2"; 
-
-        try {
-          let firebaseConfig = null;
-          if (YOUR_FIREBASE_CONFIG.apiKey && YOUR_FIREBASE_CONFIG.appId) {
-             firebaseConfig = YOUR_FIREBASE_CONFIG;
-          } 
-          else if (typeof __firebase_config !== 'undefined') {
-             firebaseConfig = JSON.parse(__firebase_config);
-          }
-
-          if (firebaseConfig) {
-              const app = initializeApp(firebaseConfig);
-              auth = getAuth(app);
-              db = getFirestore(app);
-              if (firebaseConfig.measurementId) {
-                  getAnalytics(app);
-              }
-              if (firebaseConfig.projectId) appId = firebaseConfig.projectId;
-          }
-        } catch (e) { console.log("Firebase Init Error:", e); }
-
         const usePersistentData = (collectionName, docId, initialValue, user, pathType='private') => {
           const currentDocIdRef = useRef(docId); 
           const [data, setData] = useState(() => JSON.parse(JSON.stringify(initialValue)));
@@ -644,38 +621,19 @@
           if (localApiKey) {
             try {
               const prompt = `Find the precise latitude and longitude for "${location}". Return ONLY a valid JSON object with "lat" and "lng" number properties. Example: {"lat": 35.6895, "lng": 139.6917}. Do not include markdown code blocks or any other text.`;
-              
-              const response = await fetchWithBackoff(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${localApiKey}`, { 
-                  method: 'POST', 
-                  headers: { 'Content-Type': 'application/json' }, 
-                  body: JSON.stringify({ 
-                      contents: [{ parts: [{ text: prompt }] }] 
-                  }) 
-              });
-              
+              const response = await fetchWithBackoff(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${localApiKey}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) });
               if (response.ok) {
                   const data = await response.json();
                   let text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-                  if (text) { 
-                      text = text.replace(/```json/g, '').replace(/```/g, '').trim();
-                      const jsonMatch = text.match(/\{[\s\S]*\}/); 
-                      if (jsonMatch) { 
-                          return JSON.parse(jsonMatch[0]); 
-                      } 
-                  }
+                  if (text) { text = text.replace(/```json/g, '').replace(/```/g, '').trim(); const jsonMatch = text.match(/\{[\s\S]*\}/); if (jsonMatch) { return JSON.parse(jsonMatch[0]); } }
               }
-            } catch (e) { 
-                console.warn("AI Geocoding failed:", e.message); 
-            }
+            } catch (e) { console.warn("AI Geocoding skipped:", e.message); }
           } 
-          
           try {
             const geoRes = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(location)}&count=1&language=zh&format=json`);
             const geoData = await geoRes.json();
             if (geoData.results?.length > 0) return { lat: geoData.results[0].latitude, lng: geoData.results[0].longitude };
-          } catch (e) { 
-              console.error("Standard Geocoding failed:", e); 
-          }
+          } catch (e) { console.error("Standard Geocoding failed:", e); }
           return null;
         };
 
@@ -1106,7 +1064,6 @@
           
           const isAirport = data.icon === 'airport';
 
-          // ✨ 關鍵修復：只有在「沒有正在編輯」時，才去同步雲端傳來的新資料，防止覆蓋正在打字的內容！
           useEffect(() => {
               if (!isLocalEditing) {
                   setEditData({ ...data });
@@ -1452,7 +1409,7 @@
                     const parts = [{ text: promptText }]; 
                     selectedImages.forEach(img => { const base64Data = img.split(',')[1]; parts.push({ inlineData: { mimeType: "image/jpeg", data: base64Data } }); }); 
 
-                    const response = await fetchWithBackoff(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ role: 'user', parts }] }) }); 
+                    const response = await fetchWithBackoff(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ role: 'user', parts }] }) }); 
                     const data = await response.json(); 
                     if(data.error) throw new Error(data.error.message); 
                     
@@ -1493,7 +1450,7 @@
                     const promptTarget = targetLang === 'zh-TW' ? 'Traditional Chinese (Taiwan) which is 繁體中文' : targetLangName; 
                     const prompt = `Translate the following text from ${sourceLangName} to ${promptTarget}. Return ONLY the translation.\n\nText: ${inputText}`; 
                     
-                    const response = await fetchWithBackoff(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) }); 
+                    const response = await fetchWithBackoff(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) }); 
                     const data = await response.json(); 
                     if(data.error) throw new Error(data.error.message); 
                     const resultText = data.candidates?.[0]?.content?.parts?.[0]?.text; 
@@ -1638,7 +1595,6 @@
             </div> 
             ); 
         };
-
         const App = () => {
           const [user, setUser] = useState(null);
           
@@ -1739,7 +1695,9 @@
           
           const handleUpdateDayInfo = () => { 
               if(isReadOnly) return; 
-              (false); 
+              const newItinerary = (Array.isArray(itinerary) ? itinerary : []).map(d => d.day === activeDay ? { ...d, ...editDayData } : d); 
+              updateCurrentItinerary(newItinerary); 
+              setIsEditingDay(false); 
           };
           
           const handleMoveDay = (dayNum, direction) => {
