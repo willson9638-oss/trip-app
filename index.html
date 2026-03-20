@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Trip App (V15.5 Collab & AI Pro)</title>
+    <title>Trip App (V16.0 Pro Sync & UI)</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -257,12 +257,20 @@
         const getMapLink = (query) => `https://www.google.com/maps/search/?api=1&query=$?q=${encodeURIComponent(query || '')}`;
 
         const copyToClipboard = (text) => {
-          if (!text) return;
-          const textArea = document.createElement("textarea");
-          textArea.value = text; textArea.style.position = "fixed"; textArea.style.left = "-9999px"; textArea.style.top = "0";
-          document.body.appendChild(textArea); textArea.focus(); textArea.select();
-          try { document.execCommand('copy'); } catch (err) { }
-          document.body.removeChild(textArea);
+          if (!text) return false;
+          try {
+             if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(text);
+                return true;
+             } else {
+                const textArea = document.createElement("textarea");
+                textArea.value = text; textArea.style.position = "fixed"; textArea.style.left = "-9999px"; textArea.style.top = "0";
+                document.body.appendChild(textArea); textArea.focus(); textArea.select();
+                const successful = document.execCommand('copy');
+                document.body.removeChild(textArea);
+                return successful;
+             }
+          } catch(e) { return false; }
         };
 
         const CURRENCIES = {
@@ -308,47 +316,28 @@
           transport: { title: "🚆 交通移動", icons: [{ id: 'plane', label: '飛機' }, { id: 'train', label: '火車' }, { id: 'subway', label: '地鐵' }, { id: 'bus', label: '巴士' }, { id: 'car', label: '汽車' }, { id: 'taxi', label: '計程車' }, { id: 'ship', label: '船' }, { id: 'bike', label: '自行車' }, { id: 'walk', label: '步行' }, { id: 'custom', label: '自訂 (↝)' }] },
           places: { title: "📍 景點活動", icons: [{ id: 'airport', label: '機場' }, { id: 'station', label: '車站' }, { id: 'port', label: '碼頭' }, { id: 'camera', label: '景點' }, { id: 'food', label: '餐廳' }, { id: 'shop', label: '購物' }, { id: 'stay', label: '住宿' }, { id: 'temple', label: '神社' }, { id: 'park', label: '樂園' }, { id: 'coffee', label: '咖啡' }, { id: 'beer', label: '酒吧' }, { id: 'mountain', label: '山岳' }, { id: 'waves', label: '海邊' }, { id: 'ticket', label: '票券' }, { id: 'star', label: '重點' }] }
         };
-
         const TRIPS_DB = [
           { id: 'trip-2025-japan', title: "2025 關西夏日之旅", date: "2025/07/06-2025/07/12", cover: "linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)", emoji: "🇯🇵", status: "planning", days: 7 },
-          { id: 'trip-2024-seoul', title: "2024 首爾滑雪趣", date: "2024/12/15-2024/12/20", cover: "linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%)", emoji: "🇰🇷", status: "completed", days: 6 },
-          { id: 'trip-2026-europe', title: "2026 歐洲蜜月行", date: "2026/05/10-2026/05/24", cover: "linear-gradient(135deg, #fccb90 0%, #d57eeb 100%)", emoji: "🇪🇺", status: "dream", days: 14 }
+          { id: 'trip-2024-seoul', title: "2024 首爾滑雪趣", date: "2024/12/15-2024/12/20", cover: "linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%)", emoji: "🇰🇷", status: "completed", days: 6 }
         ];
 
         const DEFAULT_INFO_LIST = [
           { id: 'info-1', type: 'flight', title: '去程航班 IT280', content: '08:05 KHH -> 12:40 NRT (T2)', sub: '手提10kg / 託運20kg', airline: '台灣虎航' },
-          { id: 'info-2', type: 'flight', title: '回程航班 BR147', content: '20:35 KIX -> 22:55 KHH', sub: '手提7kg / 託運23kg x2', airline: '長榮航空' },
           { id: 'info-3', type: 'rule', title: '< 100Wh', content: '可攜帶 (每人限20個)', status: 'ok' },
-          { id: 'info-4', type: 'rule', title: '100-160Wh', content: '需航空同意 (每人限2個)', status: 'warn' },
-          { id: 'info-5', type: 'rule', title: '> 160Wh', content: '禁止攜帶', status: 'error' },
           { id: 'info-6', type: 'note', title: '緊急聯絡', content: '外交部旅外救助: +81-3-3280-7811', sub: '日本報案: 110 / 火警: 119' }
         ];
 
         const DEFAULT_PACKING_LIST = [
           { id: 1, text: "護照 & 身分證", checked: false, category: "證件" }, { id: 2, text: "日幣現金 & 信用卡", checked: false, category: "錢包" }, { id: 3, text: "網卡 / Esim", checked: false, category: "通訊" },
-          { id: 4, text: "Visit Japan Web截圖", checked: false, category: "證件" }, { id: 5, text: "行動電源 & 充電線", checked: false, category: "3C" }, { id: 6, text: "好走的鞋子 (日行2萬步)", checked: false, category: "衣物" },
-          { id: 7, text: "常備藥品", checked: false, category: "生活" }, { id: 8, text: "盥洗用品", checked: false, category: "生活" }, { id: 9, text: "摺疊傘 (晴雨兩用)", checked: false, category: "生活" }, { id: 10, text: "購物袋 (環保袋)", checked: false, category: "生活" }
+          { id: 4, text: "行動電源 & 充電線", checked: false, category: "3C" }, { id: 5, text: "常備藥品", checked: false, category: "生活" }
         ];
+
         const INITIAL_ITINERARY_DATA = [
           {
             day: 1, date: "7/6 (日)", city: "東京", defaultLat: 35.6895, defaultLng: 139.6917, title: "啟程與澀谷夕陽", themeColor: "indigo",
             timeline: [
               { id: 'd1-1', type: 'flight', code: "IT280", title: "台灣虎航 IT280", airline: "台灣虎航", depTime: "08:05", depLoc: "KHH", arrTime: "12:40", arrLoc: "NRT", icon: 'plane' },
-              { id: 'd1-2', type: 'transport', mode: 'train', name: "京成 Skyliner", time: "15:00", duration: "00:45", cost: 2580, desc: "成田 -> 上野", icon: 'train', lat: 35.7126, lng: 139.7766 },
-              { id: 'd1-4', type: 'event', time: "16:00-16:30", title: "飯店 Check-in", icon: 'coffee', location: "錦糸町樂天城市飯店", desc: "放置行李。", lat: 35.6962, lng: 139.8144 },
-              { id: 'd1-5', type: 'event', time: "16:30-18:30", title: "澀谷 SKY", icon: 'camera', location: "SHIBUYA SKY", highlight: true, desc: "360度全景。", lat: 35.6580, lng: 139.7016 },
-              { id: 'd1-6', type: 'event', time: "19:30-21:00", title: "晚餐：宇奈とと", icon: 'food', location: "名代 宇奈とと 上野店", desc: "高 CP 值炭火鰻魚飯。", lat: 35.7141, lng: 139.7774 }
-            ]
-          },
-          {
-            day: 2, date: "7/7 (一)", city: "鎌倉", defaultLat: 35.3192, defaultLng: 139.5467, title: "湘南海岸巡禮", themeColor: "teal",
-            timeline: [
-              { id: 'd2-1', type: 'event', time: "08:30-09:00", title: "飯店出發", icon: 'stay', location: "錦糸町樂天城市飯店", desc: "吃完早餐，準備出發！", lat: 35.6962, lng: 139.8144 },
-              { id: 'd2-2', type: 'transport', mode: 'train', name: "JR 橫須賀線", time: "09:00", duration: "01:00", cost: 950, desc: "錦糸町 -> 鎌倉 (直達)", icon: 'train' },
-              { id: 'd2-3', type: 'event', time: "10:45-12:45", title: "鶴岡八幡宮 & 小町通", icon: 'map', location: "鶴岡八幡宮", highlight: true, desc: "鎌倉最重要的神社。", lat: 35.3260, lng: 139.5564, subItems: [{text: "Giraffa 咖哩麵包", icon: 'food'}, {text: "鎌倉茶茶 抹茶冰淇淋", icon: 'food'}] },
-              { id: 'd2-3-t', type: 'transport', mode: 'train', name: "江之電", time: "12:45", duration: "00:15", cost: 200, desc: "鎌倉 -> 長谷", icon: 'train' },
-              { id: 'd2-4', type: 'event', time: "13:00-14:30", title: "鎌倉大佛", icon: 'camera', location: "高德院", desc: "國寶級露天青銅大佛。", lat: 35.3168, lng: 139.5357 },
-              { id: 'd2-5', type: 'event', time: "15:00-16:00", title: "灌籃高手平交道", icon: 'camera', location: "鎌倉高校前駅", highlight: true, desc: "經典動畫場景朝聖。", lat: 35.3067, lng: 139.5019 }
+              { id: 'd1-5', type: 'event', time: "16:30-18:30", title: "澀谷 SKY", icon: 'camera', location: "SHIBUYA SKY", highlight: true, desc: "360度全景。", lat: 35.6580, lng: 139.7016, subTitle: "推薦拍攝點", subItems: [{text: "頂樓停機坪", icon: 'camera'}] }
             ]
           }
         ];
@@ -404,7 +393,7 @@
             if (!user || !db || !docId) return;
             let docRef;
             if (pathType === 'shared') {
-                docRef = doc(db, 'artifacts', appId, collectionName, docId); // ✨ 修復打包清單覆蓋行程的 Bug
+                docRef = doc(db, 'artifacts', appId, collectionName, docId); 
             } else {
                 docRef = doc(db, 'artifacts', appId, 'users', user.uid, 'data', collectionName, docId);
             }
@@ -412,7 +401,7 @@
             const unsubscribe = onSnapshot(docRef, (docSnap) => {
               if (docSnap.exists) {
                 let cloudData = docSnap.data().data;
-                if (cloudData === undefined) cloudData = initialValue; // 防止 Firebase 空資料導致白畫面
+                if (cloudData === undefined) cloudData = initialValue; 
 
                 if (JSON.stringify(cloudData) !== JSON.stringify(dataRef.current)) {
                     if (currentDocIdRef.current === docId) {
@@ -477,7 +466,6 @@
           if (localApiKey) {
             try {
               const prompt = `Find the precise latitude and longitude for "${location}". Return ONLY a valid JSON object with "lat" and "lng" number properties. Example: {"lat": 35.6895, "lng": 139.6917}. Do not include markdown code blocks or any other text.`;
-              // ✨ 修正：全面升級 gemini-2.5-flash，並移除報錯的 tools 參數
               const response = await fetchWithBackoff(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${localApiKey}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) });
               if (response.ok) {
                   const data = await response.json();
@@ -714,7 +702,6 @@
             </>
           );
         };
-
         const FlightCard = ({ data, isEditing, onDelete, onUpdate, isReadOnly, onMoveUp, onMoveDown, isFirst, isLast, onEditStart, onEditEnd, onCopy }) => {
           const [isEditMode, setIsEditMode] = useState(false);
           const [editData, setEditData] = useState({ ...data });
@@ -724,9 +711,9 @@
               <div className="flex relative pl-4 pb-6 group">
                 {!isLast && <div className="absolute left-[35px] top-0 bottom-0 w-0.5 border-l-2 border-dashed border-stone-300 z-0"></div>}
                 <div className="w-10 flex flex-col items-center mr-4 shrink-0 z-10 pt-1"><div className="w-[38px] h-[38px] rounded-full bg-blue-50 border-2 border-[#FDFCF8] shadow-sm flex items-center justify-center text-blue-500 relative z-10">{renderIconOrClass('plane', 20)}</div></div>
-                <div className="flex-1 bg-white rounded-xl shadow-sm border border-blue-100 overflow-hidden relative transition-all z-10">
-                  <div className="h-1.5 w-full bg-gradient-to-r from-blue-400 to-blue-600"></div>
-                  <div className="p-4">
+                <div className="flex-1 bg-white rounded-xl shadow-sm border border-blue-100 overflow-hidden relative transition-all z-10 flex flex-col">
+                  <div className="h-1.5 w-full bg-gradient-to-r from-blue-400 to-blue-600 shrink-0"></div>
+                  <div className="p-4 flex-1">
                       {isEditMode ? (
                         <div className="space-y-3"><div className="flex flex-col gap-2"><input className="flex-1 border rounded p-1.5 text-sm font-bold" value={editData.title} onChange={e=>setEditData({...editData, title:e.target.value})} placeholder="航班代號"/><input className="flex-1 border rounded p-1.5 text-sm" value={editData.airline} onChange={e=>setEditData({...editData, airline:e.target.value})} placeholder="航空公司"/></div><div className="grid grid-cols-2 gap-4 bg-stone-50 p-2 rounded-lg border border-stone-100"><div><label className="text-[10px] text-stone-400 font-bold block mb-1">DEPARTURE</label><input className="w-full border rounded p-1 text-xs mb-1" value={editData.depTime} onChange={e=>setEditData({...editData, depTime:e.target.value})} placeholder="時間"/><input className="w-full border rounded p-1 text-xs font-mono" value={editData.depLoc} onChange={e=>setEditData({...editData, depLoc:e.target.value})} placeholder="機場"/></div><div><label className="text-[10px] text-stone-400 font-bold block mb-1">ARRIVAL</label><input className="w-full border rounded p-1 text-xs mb-1" value={editData.arrTime} onChange={e=>setEditData({...editData, arrTime:e.target.value})} placeholder="時間"/><input className="w-full border rounded p-1 text-xs font-mono" value={editData.arrLoc} onChange={e=>setEditData({...editData, arrLoc:e.target.value})} placeholder="機場"/></div></div><div className="flex justify-end gap-2 pt-2"><button onClick={()=>setIsEditMode(false)} className="text-xs text-stone-500 px-3 py-1">取消</button><button onClick={handleSave} className="bg-blue-600 text-white text-xs px-4 py-1.5 rounded-lg shadow font-bold">儲存</button></div></div>
                       ) : (
@@ -734,11 +721,12 @@
                       )}
                   </div>
                   {isEditing && !isEditMode && !isReadOnly && (
-                      <div className="flex gap-2 p-2 bg-stone-50 border-t border-stone-100 items-center">
-                          <button onClick={()=>{setIsEditMode(true); if(onEditStart) onEditStart();}} className="flex-1 bg-white border border-stone-200 text-stone-600 py-1.5 rounded text-xs font-bold flex items-center justify-center gap-1 hover:bg-stone-100"><Pencil size={12}/> 修改</button>
-                          <button onClick={() => onCopy(data)} className="w-12 bg-white border border-stone-200 text-stone-500 py-1.5 rounded flex items-center justify-center hover:bg-stone-100" title="複製"><Copy size={12}/></button>
-                          <div className="flex gap-1 border-l border-stone-200 pl-2"><button onClick={onMoveUp} disabled={isFirst} className={`p-1.5 rounded border border-stone-200 ${isFirst ? 'bg-stone-50 text-stone-300' : 'bg-white text-stone-600 hover:bg-stone-100'}`}><ChevronUp size={14}/></button><button onClick={onMoveDown} disabled={isLast} className={`p-1.5 rounded border border-stone-200 ${isLast ? 'bg-stone-50 text-stone-300' : 'bg-white text-stone-600 hover:bg-stone-100'}`}><ChevronDown size={14}/></button></div>
-                          <button onClick={onDelete} className="w-8 bg-white border border-red-100 text-red-500 py-1.5 rounded flex items-center justify-center hover:bg-red-50"><Trash2 size={12}/></button>
+                      <div className="flex gap-1 p-2 bg-stone-50 border-t border-stone-100 items-center justify-between shrink-0">
+                          <div className="flex gap-1"><button onClick={()=>{setIsEditMode(true); if(onEditStart) onEditStart();}} className="bg-white border border-stone-200 text-stone-600 px-3 py-1.5 rounded text-xs font-bold flex items-center justify-center gap-1 hover:bg-stone-100"><Pencil size={12}/> 修改</button><button onClick={() => onCopy(data)} className="bg-white border border-stone-200 text-stone-500 px-3 py-1.5 rounded flex items-center justify-center hover:bg-stone-100" title="複製"><Copy size={12}/></button></div>
+                          <div className="flex gap-1 items-center">
+                              <div className="flex gap-1 border-r border-stone-200 pr-1 mr-1"><button onClick={onMoveUp} disabled={isFirst} className={`p-1.5 rounded border border-stone-200 ${isFirst ? 'bg-stone-50 text-stone-300' : 'bg-white text-stone-600 hover:bg-stone-100'}`}><ChevronUp size={14}/></button><button onClick={onMoveDown} disabled={isLast} className={`p-1.5 rounded border border-stone-200 ${isLast ? 'bg-stone-50 text-stone-300' : 'bg-white text-stone-600 hover:bg-stone-100'}`}><ChevronDown size={14}/></button></div>
+                              <button onClick={onDelete} className="bg-white border border-red-100 text-red-500 px-2 py-1.5 rounded flex items-center justify-center hover:bg-red-50"><Trash2 size={14}/></button>
+                          </div>
                       </div>
                   )}
                 </div>
@@ -758,24 +746,28 @@
             <div className="flex relative pl-4 pb-6 group">
               {!isLast && <div className="absolute left-[35px] top-0 bottom-0 w-0.5 border-l-2 border-dashed border-stone-300 z-0"></div>}
               <div className="w-10 flex flex-col items-center mr-4 shrink-0 z-10 pt-1"><div className={`w-8 h-8 rounded-full border border-stone-200 shadow-sm flex items-center justify-center text-stone-400 relative z-10 ${data.icon === 'custom' ? 'bg-blue-50 text-blue-600' : 'bg-[#FDFCF8]'}`}>{renderIconOrClass(data.icon, 14)}</div></div>
-              <div className={`flex-1 bg-[#F7F5F0] rounded p-3 border border-stone-100 text-sm flex flex-col relative transition-all z-10 ${isEditing ? 'border-dashed border-stone-300' : ''}`}>
+              <div className={`flex-1 bg-[#F7F5F0] rounded-xl border border-stone-100 text-sm flex flex-col relative transition-all z-10 overflow-hidden ${isEditing ? 'border-dashed border-stone-300' : ''}`}>
+                <div className="p-3 flex-1">
                 {isEditMode ? (
                   <div className="w-full space-y-2"><input className="w-full p-1 border rounded" value={editData.name} onChange={e=>setEditData({...editData, name:e.target.value})} placeholder="名稱"/><div><label className="text-[10px] text-stone-400 font-bold block mb-1">所需時間</label><input type="text" className="w-full p-1 border rounded text-sm" value={editData.duration || ''} onChange={e=>setEditData({...editData, duration:e.target.value})} placeholder="例如 01:30" /></div><div><label className="text-[10px] text-stone-400 font-bold block mb-1">備註</label><textarea className="w-full p-1 border rounded text-sm" rows={2} value={editData.desc || ''} onChange={e=>setEditData({...editData, desc:e.target.value})} placeholder="備註..." /></div>{!isWalk && (<input className="w-full p-1 border rounded" value={editData.cost} onChange={e=>setEditData({...editData, cost: e.target.value})} placeholder="費用 (例如: ¥2000)"/>)}<div className="flex justify-end gap-2 mt-2"><button onClick={()=>setIsEditMode(false)} className="text-stone-500 text-xs px-2 py-1">取消</button><button onClick={handleSave} className="bg-[#2b4f60] text-white text-xs px-3 py-1 rounded">儲存</button></div></div>
                 ) : (
                   <div className="flex justify-between items-center w-full"><div><div className="font-bold text-stone-700 flex items-center gap-2 font-serif">{data.name} {data.duration && (<span className="text-[10px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded border border-blue-100 flex items-center gap-1 font-mono"><Clock size={10}/> {data.duration}</span>)}</div><div className="text-xs text-stone-500 mt-0.5 whitespace-pre-wrap">{String(data.desc || '')}</div></div>{!isWalk && (<div className="text-right"><div className="font-bold text-stone-700 font-serif">{data.cost ? (typeof data.cost === 'number' ? data.cost.toLocaleString() : data.cost) : ''}</div></div>)}</div>
                 )}
+                </div>
                 {isEditing && !isEditMode && !isReadOnly && (
-                    <div className="flex gap-2 mt-3 pt-2 border-t border-stone-200/50 w-full items-center">
-                        <button onClick={()=>{setIsEditMode(true); if(onEditStart) onEditStart();}} className="flex-1 bg-white text-stone-600 border border-stone-200 py-1 rounded text-xs font-bold flex items-center justify-center gap-1 hover:bg-stone-50"><Pencil size={10}/> 修改</button>
-                        <button onClick={() => onCopy(data)} className="w-12 bg-white border border-stone-200 text-stone-500 py-1 rounded flex items-center justify-center hover:bg-stone-50" title="複製"><Copy size={10}/></button>
-                        <div className="flex gap-1"><button onClick={onMoveUp} disabled={isFirst} className={`p-1 rounded border border-stone-200 ${isFirst ? 'bg-stone-50 text-stone-300' : 'bg-white text-stone-600 hover:bg-stone-100'}`}><ChevronUp size={10}/></button><button onClick={onMoveDown} disabled={isLast} className={`p-1 rounded border border-stone-200 ${isLast ? 'bg-stone-50 text-stone-300' : 'bg-white text-stone-600 hover:bg-stone-100'}`}><ChevronDown size={10}/></button></div>
-                        <button onClick={onDelete} className="w-8 bg-white text-red-500 border border-stone-200 py-1 rounded flex items-center justify-center hover:bg-red-50"><Trash2 size={10}/></button>
+                    <div className="flex gap-1 p-2 bg-stone-50 border-t border-stone-200/50 w-full items-center justify-between shrink-0">
+                        <div className="flex gap-1"><button onClick={()=>{setIsEditMode(true); if(onEditStart) onEditStart();}} className="bg-white text-stone-600 border border-stone-200 px-3 py-1 rounded text-xs font-bold flex items-center justify-center gap-1 hover:bg-stone-100"><Pencil size={12}/> 修改</button><button onClick={() => onCopy(data)} className="bg-white border border-stone-200 text-stone-500 px-3 py-1 rounded flex items-center justify-center hover:bg-stone-100" title="複製"><Copy size={12}/></button></div>
+                        <div className="flex gap-1 items-center">
+                            <div className="flex gap-1 border-r border-stone-200 pr-1 mr-1"><button onClick={onMoveUp} disabled={isFirst} className={`p-1.5 rounded border border-stone-200 ${isFirst ? 'bg-stone-50 text-stone-300' : 'bg-white text-stone-600 hover:bg-stone-100'}`}><ChevronUp size={14}/></button><button onClick={onMoveDown} disabled={isLast} className={`p-1.5 rounded border border-stone-200 ${isLast ? 'bg-stone-50 text-stone-300' : 'bg-white text-stone-600 hover:bg-stone-100'}`}><ChevronDown size={14}/></button></div>
+                            <button onClick={onDelete} className="bg-white text-red-500 border border-red-100 px-2 py-1.5 rounded flex items-center justify-center hover:bg-red-50"><Trash2 size={14}/></button>
+                        </div>
                     </div>
                 )}
               </div>
             </div>
           );
         };
+
         const EventCard = ({ data, onUpdate, isEditing, onDelete, onAutoCoords, isReadOnly, onMoveUp, onMoveDown, isFirst, isLast, onEditStart, onEditEnd, onCopy }) => {
           const [isExpanded, setIsExpanded] = useState(false);
           const [isLocalEditing, setIsLocalEditing] = useState(false);
@@ -836,8 +828,8 @@
               <div className={`w-10 flex flex-col items-center mr-4 shrink-0 z-10 pt-1`}>
                   <div className={`w-[38px] h-[38px] rounded-full shadow-sm flex items-center justify-center border-2 border-[#FDFCF8] relative z-10 ${getIconStyle(data.icon)}`}>{renderIconOrClass(data.icon, isAirport ? 22 : 14)}</div>
               </div>
-              <div className={`flex-1 rounded-xl shadow-sm border bg-[#FDFCF8] overflow-hidden relative transition-all z-10 ${isLocalEditing ? 'ring-2 ring-[#2b4f60]/20' : ''} ${data.highlight ? 'border-[#B74B4B]/30' : 'border-stone-100'}`}>
-                <div className="p-4">
+              <div className={`flex-1 rounded-xl shadow-sm border bg-[#FDFCF8] overflow-hidden relative transition-all z-10 flex flex-col ${isLocalEditing ? 'ring-2 ring-[#2b4f60]/20' : ''} ${data.highlight ? 'border-[#B74B4B]/30' : 'border-stone-100'}`}>
+                <div className="p-4 flex-1">
                   {isLocalEditing ? (
                       <div className="space-y-2"><input className="w-full font-bold p-1 border rounded" value={editData.title} onChange={e=>setEditData({...editData, title: e.target.value})} placeholder="標題" />
                       <div className="flex items-center gap-2"><div className="flex-1"><label className="text-[10px] text-stone-400 font-bold block mb-1">開始時間</label><input type="time" className="w-full p-1 border rounded text-sm" value={startTime || ''} onChange={(e) => handleTimeChange('start', e.target.value)} /></div><span className="text-stone-400 pt-4">-</span><div className="flex-1"><label className="text-[10px] text-stone-400 font-bold block mb-1">結束時間</label><input type="time" className="w-full p-1 border rounded text-sm" value={endTime || ''} onChange={(e) => handleTimeChange('end', e.target.value)} /></div></div>
@@ -846,7 +838,12 @@
                       <div className="flex gap-2"><input className="w-1/3 text-xs p-1 border rounded bg-stone-50" value={editData.lat || ''} onChange={e=>setEditData({...editData, lat: e.target.value})} placeholder="緯度" /><input className="w-1/3 text-xs p-1 border rounded bg-stone-50" value={editData.lng || ''} onChange={e=>setEditData({...editData, lng: e.target.value})} placeholder="經度" /><button onClick={handleAutoCoords} disabled={isSearching} onMouseDown={(e) => e.stopPropagation()} className="flex-1 px-2 bg-indigo-100 text-indigo-700 rounded text-xs whitespace-nowrap flex items-center justify-center gap-1 hover:bg-indigo-200 disabled:opacity-50 font-bold border border-indigo-200">{isSearching ? <Loader2 size={12} className="animate-spin"/> : <React.Fragment><Star size={12}/> AI 找座標</React.Fragment>}</button></div>
                       <textarea className="w-full text-sm p-1 border rounded" rows={3} value={editData.desc} onChange={e=>setEditData({...editData, desc: e.target.value})} placeholder="描述..." />
                       <div className="bg-stone-50 p-2 rounded border border-stone-200"><div className="flex items-center gap-2 mb-2"><label className="cursor-pointer bg-white border border-stone-300 text-stone-600 px-2 py-1 rounded text-xs font-bold flex items-center gap-1 hover:bg-stone-100"><input type="file" ref={fileInputRef} className="hidden" accept="image/*" multiple onChange={handleImageUpload} /><Upload size={12} /> 相簿/檔案</label><button onClick={() => setShowUrlInput(!showUrlInput)} className="bg-white border border-stone-300 text-stone-600 px-2 py-1 rounded text-xs font-bold flex items-center gap-1 hover:bg-stone-100"><LinkIcon size={12} /> 圖片連結</button></div>{showUrlInput && (<div className="flex gap-1 mb-2"><input className="flex-1 text-xs border rounded p-1" value={newImageUrl} onChange={e=>setNewImageUrl(e.target.value)} placeholder="https://..." /><button onClick={handleAddImageUrl} type="button" className="bg-blue-600 text-white px-2 rounded text-xs">加入</button></div>)}{editData.images && editData.images.length > 0 && (<div className="flex gap-2 overflow-x-auto pb-1">{editData.images.map((img, idx) => (<div key={idx} className="relative shrink-0 w-16 h-16 group"><img src={img} className="w-full h-full object-cover rounded border border-stone-200" /><button onClick={() => removeImage(idx)} className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-0.5 shadow opacity-0 group-hover:opacity-100 transition-opacity"><X size={10} /></button></div>))}</div>)}</div>
-                      <div><label className="text-xs font-bold text-stone-500 mb-1 block ml-1">推薦/子項目 (換行分隔)</label><textarea className="w-full text-xs p-2 border rounded bg-stone-50" rows={3} value={tempSubItems} onChange={(e) => setTempSubItems(e.target.value)} placeholder="例: 必吃布丁\n買伴手禮\n拍照點" /></div>
+                      <div>
+                          <label className="text-xs font-bold text-stone-500 mb-1 block ml-1">子項目標題 (預設: 必吃必買推薦)</label>
+                          <input className="w-full text-xs p-1.5 border rounded bg-white mb-2 font-bold" value={editData.subTitle || ''} onChange={e => setEditData({...editData, subTitle: e.target.value})} placeholder="例: 必吃必買推薦" />
+                          <label className="text-xs font-bold text-stone-500 mb-1 block ml-1">子項目內容 (換行分隔)</label>
+                          <textarea className="w-full text-xs p-2 border rounded bg-stone-50" rows={3} value={tempSubItems} onChange={(e) => setTempSubItems(e.target.value)} placeholder="例: 必吃布丁\n買伴手禮\n拍照點" />
+                      </div>
                       <div className="flex justify-end gap-2 mt-2"><button onClick={()=>setIsLocalEditing(false)} className="text-stone-500 text-xs px-2 py-1">取消</button><button onClick={handleSave} className="bg-[#2b4f60] text-white text-xs px-3 py-1 rounded">儲存</button></div></div>
                   ) : (
                     <React.Fragment>
@@ -857,27 +854,26 @@
                           <div className="animate-fade-in">
                               <p className="text-sm text-stone-600 leading-relaxed ml-1 whitespace-pre-wrap">{String(data.desc || '')}</p>
                               {data.images && (Array.isArray(data.images) ? data.images : []).length > 0 && (<div className="mt-3 ml-1 flex gap-2 overflow-x-auto pb-2 no-scrollbar">{data.images.map((img, idx) => (<img key={idx} src={img} className="h-20 w-auto rounded-lg shadow-sm border border-stone-100 object-cover cursor-pointer hover:scale-105 transition-transform" onClick={() => window.open(img, '_blank')} />))}</div>)}
-                              {data.subItems && Array.isArray(data.subItems) && data.subItems.length > 0 && (<div className="mt-3 space-y-1.5 bg-[#F7F5F0] p-3 rounded-lg border border-stone-100"><div className="text-[10px] text-stone-400 font-bold mb-1 flex items-center gap-1"><Star size={10}/> 必吃必買推薦</div>{data.subItems.map((item, idx) => { const SubIcon = ICON_MAP[item.icon] || MapPin; return ( <div key={idx} className="flex items-center gap-2 text-xs text-stone-600 font-medium"><SubIcon size={12} className="text-[#B74B4B]" /> {String(item.text || '')}</div> ); })}</div>)}
+                              {data.subItems && Array.isArray(data.subItems) && data.subItems.length > 0 && (<div className="mt-3 space-y-1.5 bg-[#F7F5F0] p-3 rounded-lg border border-stone-100"><div className="text-[10px] text-stone-400 font-bold mb-1 flex items-center gap-1"><Star size={10}/> {data.subTitle || '必吃必買推薦'}</div>{data.subItems.map((item, idx) => { const SubIcon = ICON_MAP[item.icon] || MapPin; return ( <div key={idx} className="flex items-center gap-2 text-xs text-stone-600 font-medium"><SubIcon size={12} className="text-[#B74B4B]" /> {String(item.text || '')}</div> ); })}</div>)}
                           </div>
                       )}
-
                       <div className="flex justify-between items-center mt-2 border-t border-stone-50 pt-1"><button onClick={() => setIsExpanded(!isExpanded)} className="text-[10px] text-[#2b4f60] font-bold hover:underline w-full text-center py-1" onMouseDown={(e) => e.stopPropagation()}>{isExpanded ? '收起' : '詳細'}</button></div>
-                      {isEditing && !isReadOnly && (
-                          <div className="flex gap-2 mt-2 pt-2 border-t border-stone-100 items-center">
-                              <button onClick={()=>{setTempSubItems(data.subItems ? data.subItems.map(i => i.text).join("\n") : ""); setIsLocalEditing(true); if(onEditStart) onEditStart();}} className="flex-1 bg-stone-100 text-stone-600 py-1.5 rounded text-xs font-bold flex items-center justify-center gap-1 hover:bg-stone-200"><Pencil size={12}/> 修改</button>
-                              <button onClick={() => onCopy(data)} className="w-12 bg-white text-stone-500 border border-stone-200 py-1.5 rounded flex items-center justify-center hover:bg-stone-100" title="複製"><Copy size={12}/></button>
-                              <div className="flex gap-1 border-l border-stone-200 pl-2"><button onClick={onMoveUp} disabled={isFirst} className={`p-1.5 rounded border border-stone-200 ${isFirst ? 'bg-stone-50 text-stone-300' : 'bg-white text-stone-600 hover:bg-stone-100'}`}><ChevronUp size={14}/></button><button onClick={onMoveDown} disabled={isLast} className={`p-1.5 rounded border border-stone-200 ${isLast ? 'bg-stone-50 text-stone-300' : 'bg-white text-stone-600 hover:bg-stone-100'}`}><ChevronDown size={14}/></button></div>
-                              <button onClick={onDelete} className="w-8 bg-white text-red-500 border border-stone-200 py-1.5 rounded flex items-center justify-center hover:bg-red-200"><Trash2 size={12}/></button>
-                          </div>
-                      )}
                     </React.Fragment>
                   )}
                 </div>
+                {isEditing && !isLocalEditing && !isReadOnly && (
+                    <div className="flex gap-1 p-2 bg-stone-50 border-t border-stone-100 items-center justify-between shrink-0">
+                        <div className="flex gap-1"><button onClick={()=>{setTempSubItems(data.subItems ? data.subItems.map(i => i.text).join("\n") : ""); setIsLocalEditing(true); if(onEditStart) onEditStart();}} className="bg-white text-stone-600 border border-stone-200 px-3 py-1.5 rounded text-xs font-bold flex items-center justify-center gap-1 hover:bg-stone-100"><Pencil size={12}/> 修改</button><button onClick={() => onCopy(data)} className="bg-white text-stone-500 border border-stone-200 px-3 py-1.5 rounded flex items-center justify-center hover:bg-stone-100" title="複製"><Copy size={12}/></button></div>
+                        <div className="flex gap-1 items-center">
+                            <div className="flex gap-1 border-r border-stone-200 pr-1 mr-1"><button onClick={onMoveUp} disabled={isFirst} className={`p-1.5 rounded border border-stone-200 ${isFirst ? 'bg-stone-50 text-stone-300' : 'bg-white text-stone-600 hover:bg-stone-100'}`}><ChevronUp size={14}/></button><button onClick={onMoveDown} disabled={isLast} className={`p-1.5 rounded border border-stone-200 ${isLast ? 'bg-stone-50 text-stone-300' : 'bg-white text-stone-600 hover:bg-stone-100'}`}><ChevronDown size={14}/></button></div>
+                            <button onClick={onDelete} className="bg-white text-red-500 border border-red-100 px-2 py-1.5 rounded flex items-center justify-center hover:bg-red-100"><Trash2 size={14}/></button>
+                        </div>
+                    </div>
+                )}
               </div>
             </div>
           );
         };
-
         const CopyTargetDialog = ({ isOpen, itinerary, onClose, onConfirm }) => {
             const [selectedDay, setSelectedDay] = useState(null);
             const [selectedRoute, setSelectedRoute] = useState(null);
@@ -1108,16 +1104,24 @@
                         {step === 'result' && ( <div className="p-4 space-y-6"> {photoMode === 'general' && ( <div className="relative"><div className="space-y-4"><div className="relative rounded-2xl overflow-hidden shadow-sm border border-stone-200"><img src={selectedImages[0]} className="w-full object-cover opacity-90" alt="Original" /><div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none"></div><div className="absolute bottom-0 left-0 right-0 p-4 text-white"><div className="text-xs opacity-70 font-bold mb-1">原文圖像</div></div></div><div className="bg-white border border-indigo-100 rounded-2xl p-5 shadow-lg relative -mt-6 mx-2 z-10"><div className="flex justify-between items-center mb-3"><h3 className="font-bold text-indigo-600 flex items-center gap-2"><ArrowLeftRight size={16}/> 翻譯結果<Sparkles size={16} className="ml-1 text-amber-400"/></h3><button onClick={() => copyToClipboard(generalTranslation)} className="text-stone-400 hover:text-indigo-600"><Copy size={16}/></button></div><div className="prose prose-sm prose-indigo max-w-none text-stone-700 leading-relaxed whitespace-pre-wrap">{generalTranslation}</div></div></div></div> )} {photoMode === 'omikuji' && omikujiResult && ( <div className="space-y-6"><div className="bg-[#fffbf0] border border-amber-200 rounded-2xl p-6 shadow-sm text-center relative overflow-hidden"><div className="absolute top-0 right-0 p-4 opacity-10"><FileText size={100} className="text-amber-500"/></div><h3 className="text-amber-800 font-bold text-lg mb-1">運勢</h3><div className="text-5xl font-black text-amber-600 mb-4">{omikujiResult.fortune}</div><div className="w-16 h-1 bg-amber-200 mx-auto mb-4 rounded-full"></div><p className="text-amber-900/80 text-sm font-medium leading-relaxed">{omikujiResult.translation}</p></div><div className="bg-white border border-stone-200 rounded-2xl p-5 shadow-sm"><h3 className="font-bold text-stone-800 mb-3 flex items-center gap-2"><Star size={18} className="text-amber-500"/> 神明指示 / AI 解讀</h3><p className="text-stone-600 text-sm leading-7">{omikujiResult.advice}</p></div><div className="opacity-50 grayscale hover:grayscale-0 transition-all"><img src={selectedImages[0]} className="w-full h-48 object-cover rounded-xl" /></div></div> )} {photoMode === 'menu' && ( <> <div className="sticky top-[86px] z-50 bg-white/95 backdrop-blur-sm border-b border-stone-100 shadow-sm transition-all -mx-4 px-4 py-2"> <div className="flex gap-2 overflow-x-auto no-scrollbar"> {Object.keys(groupedMenu).map(cat => { const firstItem = groupedMenu[cat][0]; const label = firstItem?.originalCategory ? `${cat} (${firstItem.originalCategory})` : cat; return ( <button key={cat} id={`btn-cat-${cat}`} onClick={() => scrollToCategory(cat)} className={`px-4 py-1.5 rounded-full text-sm whitespace-nowrap border font-bold transition-all ${activeCategory === cat ? 'bg-pink-600 text-white border-pink-600 shadow-md' : 'bg-white text-stone-500 border-stone-200 hover:bg-stone-50'}`}>{label}</button> ) })} </div> </div> {Object.entries(groupedMenu).map(([cat, items]) => ( <div key={cat} id={`cat-${cat}`} className="mb-6 scroll-mt-40"> <h3 className="font-bold text-stone-800 mb-3 border-l-4 border-pink-500 pl-3 text-lg mt-6 first:mt-0"> {cat} <span className="text-sm font-normal text-stone-400 ml-2">{items[0]?.originalCategory}</span> </h3> <div className="space-y-4"> {items.map(item => ( <div key={item.id} onClick={() => setSelectedMenuItem(item)} className="bg-white border border-stone-100 rounded-2xl p-4 shadow-sm flex justify-between hover:shadow-md transition-all cursor-pointer"> <div className="flex-1 pr-2"> <div className="font-bold text-stone-900 text-lg">{item.translatedName}</div> <div className="text-xs text-stone-400 font-mono mb-2">{item.originalName}</div> <div className="text-sm text-stone-600 leading-relaxed bg-stone-50 p-2 rounded-lg">{item.description}</div> <div className="text-lg font-black mt-3 text-pink-600">{item.price}</div> </div> <div className="flex flex-col items-center justify-center gap-3 ml-2 min-w-[3rem]"> <div className="w-10 h-10 bg-pink-50 text-pink-600 rounded-full flex items-center justify-center shadow-sm"><Plus size={20}/></div> {getItemQty(item.id) > 0 && <span className="font-bold text-lg text-pink-600">{getItemQty(item.id)}</span>} </div> </div> ))} </div> </div> ))} </> )} <button onClick={() => {setStep('upload'); setSelectedImages([]); setMenuItems([]); setGeneralTranslation(''); setOmikujiResult(null);}} className="w-full py-4 border-2 border-dashed border-stone-300 text-stone-400 hover:bg-stone-50 hover:text-stone-600 rounded-2xl transition-colors font-bold flex items-center justify-center gap-2 mt-6"><RefreshCw size={18}/> 重新掃描</button> </div> )} 
                     </div> 
                     {photoMode === 'menu' && step === 'result' && getTotalCount() > 0 && ( <div className="absolute bottom-0 left-0 right-0 bg-white border-t p-4 shadow-[0_-4px_12px_rgba(0,0,0,0.15)] flex justify-between items-center z-50 pb-safe"> <div className="flex flex-col"> <div className="text-xs text-stone-500 font-bold">已點 {getTotalCount()} 項</div> <div className="font-bold text-2xl text-pink-600">¥{getTotalPrice().toLocaleString()}</div> </div> <button onClick={() => setShowOrderList(true)} className="bg-stone-900 text-white px-8 py-3 rounded-xl font-bold flex items-center gap-2 hover:bg-black transition-colors shadow-lg">查看清單 <ChevronRight size={18}/></button> </div> )} {selectedMenuItem && ( <MenuItemModal item={selectedMenuItem} initialQty={getItemQty(selectedMenuItem.id) || 1} initialOptions={[]} isOpen={true} onClose={() => setSelectedMenuItem(null)} onAdd={addToCart} /> )} {showOrderList && ( <div className="fixed inset-0 bg-black/60 z-[100] flex items-end justify-center sm:items-center p-4 backdrop-blur-sm animate-fade-in" onClick={() => setShowOrderList(false)}> <div className="bg-white w-full max-w-sm rounded-t-2xl sm:rounded-2xl overflow-hidden shadow-2xl flex flex-col max-h-[80vh]" onClick={e => e.stopPropagation()}> <div className="p-4 border-b border-stone-100 flex justify-between items-center bg-stone-50"> <h3 className="font-bold text-lg text-stone-800 flex items-center gap-2"><ShoppingBag size={20} className="text-pink-600"/> 您的點餐清單</h3> <button onClick={() => setShowOrderList(false)} className="p-1 rounded-full hover:bg-stone-200"><X size={20}/></button> </div> <div className="p-4 overflow-y-auto flex-1 space-y-3"> {Object.entries(cart).map(([id, data]) => { const item = (Array.isArray(menuItems)?menuItems:[]).find(i => i.id === data.originalId || i.id === parseInt(id.split('-')[0])); if(!item) return null; const price = parseInt(String(item.price).replace(/\D/g,'')||0); return ( <div key={id} className="flex justify-between items-start border-b border-dashed border-stone-100 pb-3 last:border-0"> <div className="flex gap-3"> <div className="w-6 h-6 bg-pink-100 text-pink-600 rounded flex items-center justify-center text-xs font-bold shrink-0 mt-1">{data.qty}x</div> <div> <div className="font-bold text-stone-900 text-lg leading-tight">{item.originalName}</div> <div className="text-xs text-stone-500 font-medium mt-0.5">{item.translatedName}</div> {data.options && data.options.length > 0 && <div className="text-xs text-stone-400 mt-1">選項: {data.options.join(', ')}</div>} </div> </div> <div className="font-bold text-stone-800 mt-1">¥{(price * data.qty).toLocaleString()}</div> </div> ); })} </div> <div className="p-4 border-t border-stone-100 bg-stone-50"> <div className="flex justify-between items-center mb-4"> <span className="text-stone-500 font-bold">總計</span> <span className="text-2xl font-black text-pink-600">¥{getTotalPrice().toLocaleString()}</span> </div> <button onClick={() => setShowOrderList(false)} className="w-full py-3 bg-[#2b4f60] text-white rounded-xl font-bold shadow-lg">關閉</button> </div> </div> </div> )} </div> ); } return null; };
-                    const ExpenseView = ({ tripId, user }) => { const [members, setMembers] = useState(["我", "旅伴A"]); const [expenses, setExpenses, isLoaded] = usePersistentData('expenses', tripId, [], user, 'shared'); const [showAdd, setShowAdd] = useState(false); const [newMember, setNewMember] = useState(""); const [newExpense, setNewExpense] = useState({ item: "", cost: "", currency: "JPY", payer: "我", split: ["我", "旅伴A"] }); const [rates, setRates] = useState(CURRENCIES); useEffect(() => { fetch('https://api.exchangerate-api.com/v4/latest/TWD') .then(r=>r.json()) .then(d => { const newRates = { ...CURRENCIES }; if(d.rates.JPY) newRates.JPY.rate = 1 / d.rates.JPY; if(d.rates.USD) newRates.USD.rate = 1 / d.rates.USD; if(d.rates.KRW) newRates.KRW.rate = 1 / d.rates.KRW; if(d.rates.EUR) newRates.EUR.rate = 1 / d.rates.EUR; setRates(newRates); }) .catch(()=>{ console.log("Using default rates"); }); }, []); const addExpense = () => { if (!newExpense.item || !newExpense.cost) return; setExpenses(prev => { const safeExpenses = Array.isArray(prev) ? prev : []; return [...safeExpenses, { id: Date.now(), item: newExpense.item, cost: parseFloat(newExpense.cost), currency: newExpense.currency, payer: newExpense.payer, split: newExpense.split }]; }); setShowAdd(false); setNewExpense({ item: "", cost: "", currency: "JPY", payer: "我", split: ["我", "旅伴A"] }); }; const handleAddMember = () => { if (newMember && !members.includes(newMember)) { setMembers([...members, newMember]); setNewMember(""); } }; const handleRemoveMember = (m) => { if(m!=="我") setMembers(members.filter(mem=>mem!==m)); }; const toggleSplit = (m) => { const current = newExpense.split; setNewExpense({...newExpense, split: current.includes(m) ? current.filter(x=>x!==m) : [...current, m]}); }; const totalSpentTWD = useMemo(() => { if (!Array.isArray(expenses)) return 0; return expenses.reduce((sum, e) => { const amount = parseFloat(e.cost) || 0; const rate = rates[e.currency]?.rate || 1; return sum + (amount * rate); }, 0); }, [expenses, rates]); return ( <div className="p-4 pb-24"> <div className="bg-[#2b4f60] p-5 rounded-2xl text-white shadow-lg mb-6"><div className="flex justify-between items-start"><div><div className="text-xs opacity-70">總支出 (預估台幣)</div><div className="text-3xl font-bold">NT$ {Math.round(totalSpentTWD).toLocaleString()}</div></div><div className="text-right bg-white/20 px-3 py-1.5 rounded-lg backdrop-blur-sm"><div className="text-[10px] opacity-80 mb-1">參考匯率</div><div className="font-mono text-xs space-y-0.5"><div>JPY ≈ {rates.JPY.rate.toFixed(3)}</div><div>USD ≈ {rates.USD.rate.toFixed(1)}</div></div></div></div><div className="flex gap-2 mt-4 overflow-x-auto pb-2 pt-2 scrollbar-hide">{members.map(m => (<div key={m} className="relative group flex-shrink-0"><div className="w-9 h-9 rounded-full bg-[#B74B4B] flex items-center justify-center text-xs border-2 border-white/20 shadow-sm font-bold">{m[0]}</div>{m!=="我" && <button onClick={()=>handleRemoveMember(m)} className="absolute -top-1 -right-1 bg-white text-red-500 rounded-full w-4 h-4 flex items-center justify-center shadow-sm z-10"><X size={10}/></button>}</div>))}<div className="flex items-center bg-white/20 rounded-full px-3 py-1 ml-1"><input className="bg-transparent w-16 text-xs text-white placeholder-white/50 focus:outline-none" placeholder="加旅伴" value={newMember} onChange={e=>setNewMember(e.target.value)}/><button onClick={handleAddMember} className="hover:bg-white/20 rounded-full p-1"><Plus size={14}/></button></div></div></div> <div className="bg-white p-4 rounded-xl border border-stone-100 mb-4 shadow-sm"><h3 className="font-bold mb-3 flex items-center gap-2 text-stone-700"><Calculator size={16} className="text-[#2b4f60]"/> 最近消費</h3><div className="space-y-3">{Array.isArray(expenses) && expenses.length > 0 ? ( expenses.map(ex => { const currency = rates[ex.currency] || rates.TWD; return ( <div key={ex.id} className="flex justify-between items-center p-2 hover:bg-stone-50 rounded-lg transition-colors"><div className="flex items-center gap-3"><div className="w-8 h-8 rounded-full bg-stone-100 flex items-center justify-center text-stone-400"><ShoppingBag size={14}/></div><div><div className="text-sm font-bold text-stone-700">{ex.item}</div><div className="text-[10px] text-stone-400 flex gap-1"><span className="bg-stone-100 px-1 rounded">{ex.payer} 先付</span>{ex.split.length > 0 && <span>• 分給 {ex.split.length} 人</span>}</div></div></div><div className="flex items-center gap-3"><div className="text-right"><div className="font-bold font-mono text-stone-700">{currency.symbol} {ex.cost.toLocaleString()}</div>{ex.currency !== 'TWD' && (<div className="text-[10px] text-stone-400">≈ NT$ {Math.round(ex.cost * currency.rate).toLocaleString()}</div>)}</div><button onClick={()=>setExpenses(prev => prev.filter(e=>e.id!==ex.id))} className="text-stone-300 hover:text-red-500 transition-colors"><Trash2 size={14}/></button></div></div> ); }) ) : ( <div className="text-center text-stone-400 text-xs py-4">尚無消費紀錄</div> )}</div></div> <button onClick={()=>setShowAdd(true)} className="fixed bottom-24 right-4 bg-[#B74B4B] text-white p-4 rounded-full shadow-xl hover:bg-[#a03e3e] transition-colors z-30"><Plus size={24}/></button> {showAdd && <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[2000]"><div className="bg-white p-6 rounded-2xl w-full max-w-sm shadow-2xl animate-fade-in"><h3 className="font-bold text-lg mb-4 text-stone-800 flex items-center gap-2"><Wallet size={20} className="text-[#B74B4B]"/> 新增消費</h3><div className="space-y-4"><input className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#2b4f60]/20 font-bold" placeholder="消費項目 (例如: 晚餐)" value={newExpense.item} onChange={e=>setNewExpense({...newExpense, item: e.target.value})}/><div className="flex gap-2"><div className="relative w-1/3"><select className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl appearance-none focus:outline-none font-mono text-sm font-bold pl-8" value={newExpense.currency} onChange={e=>setNewExpense({...newExpense, currency: e.target.value})}>{Object.values(CURRENCIES).map(c => (<option key={c.id} value={c.id}>{c.id}</option>))}</select><div className="absolute left-3 top-3.5 pointer-events-none text-stone-500 text-xs">{CURRENCIES[newExpense.currency].flag}</div><ChevronDown size={14} className="absolute right-2 top-4 text-stone-400 pointer-events-none"/></div><div className="relative flex-1"><span className="absolute left-3 top-3 text-stone-400 font-mono font-bold">{CURRENCIES[newExpense.currency].symbol}</span><input type="number" className="w-full p-3 pl-8 bg-stone-50 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#2b4f60]/20 font-mono font-bold" placeholder="0" value={newExpense.cost} onChange={e=>setNewExpense({...newExpense, cost: e.target.value})}/></div></div><div><label className="text-xs font-bold text-stone-400 mb-2 block ml-1">誰先付錢?</label><div className="flex gap-2 flex-wrap">{members.map(m=><button key={m} onClick={()=>setNewExpense({...newExpense, payer:m})} className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ${newExpense.payer===m ? 'bg-[#2b4f60] text-white border-[#2b4f60] shadow-md' : 'bg-white text-stone-500 border-stone-200 hover:bg-stone-50'}`}>{m}</button>)}</div></div><div><label className="text-xs font-bold text-stone-400 mb-2 block ml-1">分攤給誰?</label><div className="flex gap-2 flex-wrap">{members.map(m=><button key={m} onClick={()=>toggleSplit(m)} className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all border flex items-center gap-1 ${newExpense.split.includes(m) ? 'bg-green-100 text-green-700 border-green-200' : 'bg-white text-stone-400 border-stone-100'}`}>{newExpense.split.includes(m) && <Check size={10}/>} {m}</button>)}</div></div><div className="flex gap-3 pt-2"><button onClick={()=>setShowAdd(false)} className="flex-1 py-3 border border-stone-200 rounded-xl text-stone-500 font-bold hover:bg-stone-50">取消</button><button onClick={addExpense} className="flex-1 py-3 bg-[#2b4f60] text-white rounded-xl font-bold shadow-lg hover:bg-[#1e3a8a] transition-colors">儲存消費</button></div></div></div></div>} </div> ); };
+        
+        const ExpenseView = ({ tripId, user }) => { const [members, setMembers] = useState(["我", "旅伴A"]); const [expenses, setExpenses, isLoaded] = usePersistentData('expenses', tripId, [], user, 'shared'); const [showAdd, setShowAdd] = useState(false); const [newMember, setNewMember] = useState(""); const [newExpense, setNewExpense] = useState({ item: "", cost: "", currency: "JPY", payer: "我", split: ["我", "旅伴A"] }); const [rates, setRates] = useState(CURRENCIES); useEffect(() => { fetch('https://api.exchangerate-api.com/v4/latest/TWD') .then(r=>r.json()) .then(d => { const newRates = { ...CURRENCIES }; if(d.rates.JPY) newRates.JPY.rate = 1 / d.rates.JPY; if(d.rates.USD) newRates.USD.rate = 1 / d.rates.USD; if(d.rates.KRW) newRates.KRW.rate = 1 / d.rates.KRW; if(d.rates.EUR) newRates.EUR.rate = 1 / d.rates.EUR; setRates(newRates); }) .catch(()=>{ console.log("Using default rates"); }); }, []); const addExpense = () => { if (!newExpense.item || !newExpense.cost) return; setExpenses(prev => { const safeExpenses = Array.isArray(prev) ? prev : []; return [...safeExpenses, { id: Date.now(), item: newExpense.item, cost: parseFloat(newExpense.cost), currency: newExpense.currency, payer: newExpense.payer, split: newExpense.split }]; }); setShowAdd(false); setNewExpense({ item: "", cost: "", currency: "JPY", payer: "我", split: ["我", "旅伴A"] }); }; const handleAddMember = () => { if (newMember && !members.includes(newMember)) { setMembers([...members, newMember]); setNewMember(""); } }; const handleRemoveMember = (m) => { if(m!=="我") setMembers(members.filter(mem=>mem!==m)); }; const toggleSplit = (m) => { const current = newExpense.split; setNewExpense({...newExpense, split: current.includes(m) ? current.filter(x=>x!==m) : [...current, m]}); }; const totalSpentTWD = useMemo(() => { if (!Array.isArray(expenses)) return 0; return expenses.reduce((sum, e) => { const amount = parseFloat(e.cost) || 0; const rate = rates[e.currency]?.rate || 1; return sum + (amount * rate); }, 0); }, [expenses, rates]); return ( <div className="p-4 pb-24"> <div className="bg-[#2b4f60] p-5 rounded-2xl text-white shadow-lg mb-6"><div className="flex justify-between items-start"><div><div className="text-xs opacity-70">總支出 (預估台幣)</div><div className="text-3xl font-bold">NT$ {Math.round(totalSpentTWD).toLocaleString()}</div></div><div className="text-right bg-white/20 px-3 py-1.5 rounded-lg backdrop-blur-sm"><div className="text-[10px] opacity-80 mb-1">參考匯率</div><div className="font-mono text-xs space-y-0.5"><div>JPY ≈ {rates.JPY.rate.toFixed(3)}</div><div>USD ≈ {rates.USD.rate.toFixed(1)}</div></div></div></div><div className="flex gap-2 mt-4 overflow-x-auto pb-2 pt-2 scrollbar-hide">{members.map(m => (<div key={m} className="relative group flex-shrink-0"><div className="w-9 h-9 rounded-full bg-[#B74B4B] flex items-center justify-center text-xs border-2 border-white/20 shadow-sm font-bold">{m[0]}</div>{m!=="我" && <button onClick={()=>handleRemoveMember(m)} className="absolute -top-1 -right-1 bg-white text-red-500 rounded-full w-4 h-4 flex items-center justify-center shadow-sm z-10"><X size={10}/></button>}</div>))}<div className="flex items-center bg-white/20 rounded-full px-3 py-1 ml-1"><input className="bg-transparent w-16 text-xs text-white placeholder-white/50 focus:outline-none" placeholder="加旅伴" value={newMember} onChange={e=>setNewMember(e.target.value)}/><button onClick={handleAddMember} className="hover:bg-white/20 rounded-full p-1"><Plus size={14}/></button></div></div></div> <div className="bg-white p-4 rounded-xl border border-stone-100 mb-4 shadow-sm"><h3 className="font-bold mb-3 flex items-center gap-2 text-stone-700"><Calculator size={16} className="text-[#2b4f60]"/> 最近消費</h3><div className="space-y-3">{Array.isArray(expenses) && expenses.length > 0 ? ( expenses.map(ex => { const currency = rates[ex.currency] || rates.TWD; return ( <div key={ex.id} className="flex justify-between items-center p-2 hover:bg-stone-50 rounded-lg transition-colors"><div className="flex items-center gap-3"><div className="w-8 h-8 rounded-full bg-stone-100 flex items-center justify-center text-stone-400"><ShoppingBag size={14}/></div><div><div className="text-sm font-bold text-stone-700">{ex.item}</div><div className="text-[10px] text-stone-400 flex gap-1"><span className="bg-stone-100 px-1 rounded">{ex.payer} 先付</span>{ex.split.length > 0 && <span>• 分給 {ex.split.length} 人</span>}</div></div></div><div className="flex items-center gap-3"><div className="text-right"><div className="font-bold font-mono text-stone-700">{currency.symbol} {ex.cost.toLocaleString()}</div>{ex.currency !== 'TWD' && (<div className="text-[10px] text-stone-400">≈ NT$ {Math.round(ex.cost * currency.rate).toLocaleString()}</div>)}</div><button onClick={()=>setExpenses(prev => prev.filter(e=>e.id!==ex.id))} className="text-stone-300 hover:text-red-500 transition-colors"><Trash2 size={14}/></button></div></div> ); }) ) : ( <div className="text-center text-stone-400 text-xs py-4">尚無消費紀錄</div> )}</div></div> <button onClick={()=>setShowAdd(true)} className="fixed bottom-24 right-4 bg-[#B74B4B] text-white p-4 rounded-full shadow-xl hover:bg-[#a03e3e] transition-colors z-30"><Plus size={24}/></button> {showAdd && <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[2000]"><div className="bg-white p-6 rounded-2xl w-full max-w-sm shadow-2xl animate-fade-in"><h3 className="font-bold text-lg mb-4 text-stone-800 flex items-center gap-2"><Wallet size={20} className="text-[#B74B4B]"/> 新增消費</h3><div className="space-y-4"><input className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#2b4f60]/20 font-bold" placeholder="消費項目 (例如: 晚餐)" value={newExpense.item} onChange={e=>setNewExpense({...newExpense, item: e.target.value})}/><div className="flex gap-2"><div className="relative w-1/3"><select className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl appearance-none focus:outline-none font-mono text-sm font-bold pl-8" value={newExpense.currency} onChange={e=>setNewExpense({...newExpense, currency: e.target.value})}>{Object.values(CURRENCIES).map(c => (<option key={c.id} value={c.id}>{c.id}</option>))}</select><div className="absolute left-3 top-3.5 pointer-events-none text-stone-500 text-xs">{CURRENCIES[newExpense.currency].flag}</div><ChevronDown size={14} className="absolute right-2 top-4 text-stone-400 pointer-events-none"/></div><div className="relative flex-1"><span className="absolute left-3 top-3 text-stone-400 font-mono font-bold">{CURRENCIES[newExpense.currency].symbol}</span><input type="number" className="w-full p-3 pl-8 bg-stone-50 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#2b4f60]/20 font-mono font-bold" placeholder="0" value={newExpense.cost} onChange={e=>setNewExpense({...newExpense, cost: e.target.value})}/></div></div><div><label className="text-xs font-bold text-stone-400 mb-2 block ml-1">誰先付錢?</label><div className="flex gap-2 flex-wrap">{members.map(m=><button key={m} onClick={()=>setNewExpense({...newExpense, payer:m})} className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ${newExpense.payer===m ? 'bg-[#2b4f60] text-white border-[#2b4f60] shadow-md' : 'bg-white text-stone-500 border-stone-200 hover:bg-stone-50'}`}>{m}</button>)}</div></div><div><label className="text-xs font-bold text-stone-400 mb-2 block ml-1">分攤給誰?</label><div className="flex gap-2 flex-wrap">{members.map(m=><button key={m} onClick={()=>toggleSplit(m)} className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all border flex items-center gap-1 ${newExpense.split.includes(m) ? 'bg-green-100 text-green-700 border-green-200' : 'bg-white text-stone-400 border-stone-100'}`}>{newExpense.split.includes(m) && <Check size={10}/>} {m}</button>)}</div></div><div className="flex gap-3 pt-2"><button onClick={()=>setShowAdd(false)} className="flex-1 py-3 border border-stone-200 rounded-xl text-stone-500 font-bold hover:bg-stone-50">取消</button><button onClick={addExpense} className="flex-1 py-3 bg-[#2b4f60] text-white rounded-xl font-bold shadow-lg hover:bg-[#1e3a8a] transition-colors">儲存消費</button></div></div></div></div>} </div> ); };
         
         const PackingView = ({ tripId, user }) => { const [items, setItems, isLoaded] = usePersistentData('packing', tripId, DEFAULT_PACKING_LIST, user, 'shared'); const safeItems = Array.isArray(items) ? items : []; const [newItemText, setNewItemText] = useState(""); const [isEditing, setIsEditing] = useState(false); const toggleCheck = (id) => setItems(prev => (Array.isArray(prev)?prev:[]).map(i => i.id === id ? { ...i, checked: !i.checked } : i)); const addNewItem = () => { if (newItemText.trim()) { setItems(prev => [...(Array.isArray(prev)?prev:[]), { id: Date.now(), text: newItemText, checked: false, category: "自訂" }]); setNewItemText(""); } }; const deleteItem = (id) => setItems(prev => (Array.isArray(prev)?prev:[]).filter(i => i.id !== id)); const progress = Math.round((safeItems.filter(i => i.checked).length / Math.max(safeItems.length, 1)) * 100) || 0; return ( <div className="p-4 pb-24"> <div className="bg-[#FDFCF8] p-5 rounded-xl shadow-sm border border-stone-200 mb-4"><div className="flex justify-between items-end mb-3"><span className="text-stone-500 text-xs font-bold tracking-wider">打包進度</span><span className="text-3xl font-bold text-[#2b4f60] font-serif">{progress}%</span></div><div className="h-1.5 bg-stone-100 rounded-full overflow-hidden"><div className="h-full bg-[#2b4f60] transition-all duration-500 ease-out" style={{ width: `${progress}%` }}></div></div></div> <div className="flex gap-2 mb-6"><input className="flex-1 px-4 py-3 rounded bg-[#FDFCF8] border text-sm" placeholder="新增物品..." value={newItemText} onChange={(e) => setNewItemText(e.target.value)} /><button onClick={addNewItem} className="bg-[#2b4f60] text-white w-12 rounded flex items-center justify-center shadow-sm"><Plus size={20} /></button><button onClick={() => setIsEditing(!isEditing)} className={`w-12 rounded flex items-center justify-center shadow-sm border ${isEditing ? 'bg-red-100 text-red-500' : 'bg-white text-stone-500'}`}><Trash2 size={20} /></button></div> <div className="space-y-2">{safeItems.map(item => (<div key={item.id} onClick={() => !isEditing && toggleCheck(item.id)} className={`flex items-center p-3 rounded-xl border transition-all ${item.checked ? 'bg-stone-50 opacity-60' : 'bg-white'}`}>{isEditing ? (<button onClick={() => deleteItem(item.id)} className="mr-3 text-red-500"><X size={16}/></button>) : (<div className={`w-5 h-5 rounded border mr-3 flex items-center justify-center ${item.checked ? 'bg-[#7d8f68] border-transparent' : ''}`}>{item.checked && <Check size={12} className="text-white"/>}</div>)}<span className={`text-sm flex-1 ${item.checked ? 'line-through text-stone-400' : ''}`}>{item.text}</span></div>))}</div> </div> ); };
-        
         const InfoView = ({ tripId, user }) => { 
             const [infos, setInfos, isLoaded] = usePersistentData('infos', tripId, DEFAULT_INFO_LIST, user, 'shared'); 
             const safeInfos = Array.isArray(infos) ? infos : [];
             const [isEditing, setIsEditing] = useState(false); 
             const [deleteConfirmId, setDeleteConfirmId] = useState(null); 
-            const handleAdd = () => { setInfos(prev => [...(Array.isArray(prev)?prev:[]), { id: Date.now(), type: 'note', title: '新筆記', content: '內容...', sub: '' }]); }; 
+            
+            const handleAdd = (type = 'note') => { 
+                if (type === 'flight') {
+                    setInfos(prev => [{ id: Date.now(), type: 'flight', title: '新航班', content: '...', sub: '', airline: '航空公司' }, ...(Array.isArray(prev)?prev:[])]); 
+                } else {
+                    setInfos(prev => [{ id: Date.now(), type: 'note', title: '新筆記', content: '內容...', sub: '' }, ...(Array.isArray(prev)?prev:[])]); 
+                }
+            }; 
+            
             const handleUpdate = (id, field, val) => { setInfos(prev => (Array.isArray(prev)?prev:[]).map(i => i.id === id ? { ...i, [field]: val } : i)); }; 
             const confirmDelete = (id) => { setDeleteConfirmId(id); }; 
             const executeDelete = () => { setInfos(prev => (Array.isArray(prev)?prev:[]).filter(i => i.id !== deleteConfirmId)); setDeleteConfirmId(null); }; 
@@ -1137,22 +1141,27 @@
             return ( 
             <div className="p-4 pb-24 animate-fade-in"> 
                 <Dialog isOpen={!!deleteConfirmId} title="確認刪除" message="確定要刪除這條資訊嗎？" onConfirm={executeDelete} onCancel={() => setDeleteConfirmId(null)} type="confirm" /> 
-                <div className="flex justify-between items-center mb-4"><h2 className="text-lg font-bold text-stone-700 flex items-center gap-2"><Info size={20} /> 實用資訊</h2><div className="flex gap-2"><button onClick={handleAdd} className="text-[#2b4f60] bg-stone-100 p-2 rounded-full"><Plus size={18}/></button><button onClick={() => setIsEditing(!isEditing)} className={`p-2 rounded-full ${isEditing ? 'bg-red-100 text-red-500' : 'bg-stone-100 text-stone-500'}`}><Pencil size={18}/></button></div></div> 
+                <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-lg font-bold text-stone-700 flex items-center gap-2"><Info size={20} /> 實用資訊</h2>
+                    <div className="flex gap-2">
+                        <button onClick={() => handleAdd('flight')} className="text-blue-600 bg-blue-50 px-3 py-1.5 rounded-full flex items-center gap-1 text-xs font-bold"><Plane size={14}/> 航班</button>
+                        <button onClick={() => handleAdd('note')} className="text-[#2b4f60] bg-stone-100 px-3 py-1.5 rounded-full flex items-center gap-1 text-xs font-bold"><Plus size={14}/> 筆記</button>
+                        <button onClick={() => setIsEditing(!isEditing)} className={`p-1.5 rounded-full flex items-center justify-center ${isEditing ? 'bg-red-100 text-red-500' : 'bg-stone-100 text-stone-500'}`}><Pencil size={14}/></button>
+                    </div>
+                </div> 
                 <div className="space-y-4"> 
                 {safeInfos.map((info, index) => { 
                     const commonEditControls = isEditing && (
-                        <div className="absolute top-2 right-2 flex items-center gap-1 z-10 bg-white/80 backdrop-blur rounded-lg p-1 border border-stone-100 shadow-sm">
-                            <div className="flex flex-col gap-0.5 border-r border-stone-200 pr-1 mr-1">
-                                <button onClick={(e)=>{e.stopPropagation(); handleMove(info.id, -1)}} disabled={index===0} className="p-0.5 hover:bg-stone-100 rounded disabled:opacity-30 text-stone-500"><ChevronUp size={12}/></button>
-                                <button onClick={(e)=>{e.stopPropagation(); handleMove(info.id, 1)}} disabled={index===safeInfos.length-1} className="p-0.5 hover:bg-stone-100 rounded disabled:opacity-30 text-stone-500"><ChevronDown size={12}/></button>
-                            </div>
-                            <button onClick={(e) => { e.stopPropagation(); confirmDelete(info.id); }} className="text-red-400 p-1 hover:bg-red-50 rounded"><X size={14}/></button>
+                        <div className="flex justify-end gap-1 mb-3 pb-3 border-b border-stone-200/50">
+                            <button onClick={(e)=>{e.stopPropagation(); handleMove(info.id, -1)}} disabled={index===0} className="p-1.5 bg-white hover:bg-stone-100 border border-stone-200 rounded text-stone-600 disabled:opacity-30"><ChevronUp size={14}/></button>
+                            <button onClick={(e)=>{e.stopPropagation(); handleMove(info.id, 1)}} disabled={index===safeInfos.length-1} className="p-1.5 bg-white hover:bg-stone-100 border border-stone-200 rounded text-stone-600 disabled:opacity-30"><ChevronDown size={14}/></button>
+                            <button onClick={(e) => { e.stopPropagation(); confirmDelete(info.id); }} className="p-1.5 bg-red-50 hover:bg-red-100 text-red-500 rounded ml-2 border border-red-100"><Trash2 size={14}/></button>
                         </div>
                     );
 
-                    if (info.type === 'flight') { return ( <div key={info.id} className="bg-blue-50 border border-blue-100 rounded-xl p-4 relative group"> {commonEditControls} <div className="flex justify-between mb-2 gap-2"> {isEditing ? ( <> <input className="font-bold text-blue-800 bg-white border border-blue-200 rounded px-1 w-2/3" value={info.title} onChange={e => handleUpdate(info.id, 'title', e.target.value)} /> <input className="text-xs text-blue-600 bg-white border border-blue-200 rounded px-1 w-1/3 text-center" value={info.airline} onChange={e => handleUpdate(info.id, 'airline', e.target.value)} placeholder="航空公司" /> </> ) : ( <> <span className="font-bold text-blue-800">{info.title}</span> <span className="text-xs bg-white px-2 py-0.5 rounded text-blue-600">{info.airline || '航班'}</span> </> )} </div> {isEditing ? ( <div className="space-y-1"> <textarea className="w-full border p-1 text-sm bg-white rounded" rows={2} value={info.content} onChange={e=>handleUpdate(info.id, 'content', e.target.value)} /> <input className="w-full border p-1 text-xs bg-white rounded" value={info.sub} onChange={e=>handleUpdate(info.id, 'sub', e.target.value)} /> </div> ) : ( <> <div className="text-sm text-stone-700 font-mono whitespace-pre-wrap">{info.content}</div> <div className="text-xs text-stone-500 mt-1 border-t border-blue-100 pt-2">{info.sub}</div> </> )} </div> ) } else if (info.type === 'rule') { return ( <div key={info.id} className="flex justify-between items-center text-sm p-3 bg-stone-50 rounded-xl border border-stone-100 relative"> {commonEditControls} {isEditing ? ( <div className="flex-1 space-y-1 pr-16"> <input className="w-full border p-1 rounded" value={info.title} onChange={e=>handleUpdate(info.id, 'title', e.target.value)} /> <input className="w-full border p-1 rounded" value={info.content} onChange={e=>handleUpdate(info.id, 'content', e.target.value)} /> </div> ) : ( <> <span className="font-bold text-stone-700">{info.title}</span> <span className={`text-xs px-2 py-1 rounded ${info.status === 'ok' ? 'bg-green-100 text-green-700' : info.status === 'warn' ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'}`}>{info.content}</span> </> )} </div> ) } else { return ( <div key={info.id} className="bg-white p-4 rounded-xl shadow-sm border border-stone-200 relative"> {commonEditControls} <h3 className="font-bold text-stone-800 mb-1 pr-16"> {isEditing ? <input value={info.title} onChange={e=>handleUpdate(info.id, 'title', e.target.value)} className="border-b w-full"/> : info.title} </h3> <div className="text-sm text-stone-600 whitespace-pre-wrap"> {isEditing ? <textarea value={info.content} onChange={e=>handleUpdate(info.id, 'content', e.target.value)} className="w-full border rounded p-1" rows={3}/> : info.content} </div> <div className="text-xs text-stone-400 mt-1"> {isEditing ? <input value={info.sub} onChange={e=>handleUpdate(info.id, 'sub', e.target.value)} className="w-full border-b"/> : info.sub} </div> </div> ) } })} </div> </div> ); };
-        
-        const HomeView = ({ trips, onSelectTrip, onAddTrip, onEditTrip, onDeleteTrip, onShareTrip, onJoinTrip, user }) => { 
+                    if (info.type === 'flight') { return ( <div key={info.id} className={`bg-blue-50 border rounded-xl p-4 relative ${isEditing ? 'border-dashed border-blue-300' : 'border-blue-100'}`}> {commonEditControls} <div className="flex justify-between mb-2 gap-2"> {isEditing ? ( <> <input className="font-bold text-blue-800 bg-white border border-blue-200 rounded px-2 py-1 w-2/3 text-sm" value={info.title} onChange={e => handleUpdate(info.id, 'title', e.target.value)} /> <input className="text-xs text-blue-600 bg-white border border-blue-200 rounded px-2 py-1 w-1/3 text-center" value={info.airline} onChange={e => handleUpdate(info.id, 'airline', e.target.value)} placeholder="航空公司" /> </> ) : ( <> <span className="font-bold text-blue-800">{info.title}</span> <span className="text-xs bg-white px-2 py-0.5 rounded text-blue-600">{info.airline || '航班'}</span> </> )} </div> {isEditing ? ( <div className="space-y-2 mt-2"> <textarea className="w-full border border-blue-200 p-2 text-sm bg-white rounded" rows={2} value={info.content} onChange={e=>handleUpdate(info.id, 'content', e.target.value)} /> <input className="w-full border border-blue-200 p-2 text-xs bg-white rounded" value={info.sub} onChange={e=>handleUpdate(info.id, 'sub', e.target.value)} /> </div> ) : ( <> <div className="text-sm text-stone-700 font-mono whitespace-pre-wrap">{info.content}</div> <div className="text-xs text-stone-500 mt-1 border-t border-blue-100 pt-2">{info.sub}</div> </> )} </div> ) } else if (info.type === 'rule') { return ( <div key={info.id} className="flex flex-col text-sm p-3 bg-stone-50 rounded-xl border border-stone-100 relative"> {commonEditControls} <div className="flex justify-between items-center w-full"> {isEditing ? ( <div className="flex-1 space-y-2"> <input className="w-full border p-2 text-sm rounded bg-white" value={info.title} onChange={e=>handleUpdate(info.id, 'title', e.target.value)} /> <input className="w-full border p-2 text-sm rounded bg-white" value={info.content} onChange={e=>handleUpdate(info.id, 'content', e.target.value)} /> </div> ) : ( <> <span className="font-bold text-stone-700">{info.title}</span> <span className={`text-xs px-2 py-1 rounded ${info.status === 'ok' ? 'bg-green-100 text-green-700' : info.status === 'warn' ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'}`}>{info.content}</span> </> )} </div> </div> ) } else { return ( <div key={info.id} className={`bg-white p-4 rounded-xl shadow-sm border relative ${isEditing ? 'border-dashed border-stone-300' : 'border-stone-200'}`}> {commonEditControls} <h3 className="font-bold text-stone-800 mb-2"> {isEditing ? <input value={info.title} onChange={e=>handleUpdate(info.id, 'title', e.target.value)} className="border rounded p-2 text-sm w-full bg-stone-50"/> : info.title} </h3> <div className="text-sm text-stone-600 whitespace-pre-wrap"> {isEditing ? <textarea value={info.content} onChange={e=>handleUpdate(info.id, 'content', e.target.value)} className="w-full border rounded p-2 text-sm bg-stone-50 mt-1" rows={3}/> : info.content} </div> <div className="text-xs text-stone-400 mt-2"> {isEditing ? <input value={info.sub} onChange={e=>handleUpdate(info.id, 'sub', e.target.value)} className="w-full border rounded p-2 text-xs bg-stone-50"/> : info.sub} </div> </div> ) } })} </div> </div> ); };
+
+        const HomeView = ({ trips, onSelectTrip, onAddTrip, onEditTrip, onDeleteTrip, onJoinTrip, user }) => { 
             const [showModal, setShowModal] = useState(false); 
             const [tripForm, setTripForm] = useState({ id: null, title: '', date: '', emoji: '✈️', cover: THEME_COLORS[0].value }); 
             const [joinCode, setJoinCode] = useState(''); 
@@ -1165,6 +1174,25 @@
             const handleSave = () => { if (tripForm.title) { if (tripForm.id) { onEditTrip(tripForm.id, { title: tripForm.title, date: tripForm.date, emoji: tripForm.emoji, cover: tripForm.cover }); } else { onAddTrip({ title: tripForm.title, date: tripForm.date, emoji: tripForm.emoji, cover: tripForm.cover }); } setShowModal(false); } }; 
             const handleJoinClick = async () => { if(!joinCode) return; setIsJoining(true); await onJoinTrip(joinCode); setIsJoining(false); setJoinCode(''); }; 
             const handleDeleteConfirm = () => { if (deleteConfirmId) { onDeleteTrip(deleteConfirmId); setDeleteConfirmId(null); } }; 
+            
+            // 新的同步分享按鈕邏輯
+            const handleShareClick = (e, tripId) => {
+                e.preventDefault(); e.stopPropagation();
+                const shareUrl = `${window.location.origin}${window.location.pathname}?share=${tripId}`;
+                
+                if (navigator.share) {
+                    navigator.share({
+                        title: '與我一起規劃行程！',
+                        text: '點擊連結加入我的旅程協作：',
+                        url: shareUrl
+                    }).catch(console.error);
+                } else {
+                    const success = copyToClipboard(shareUrl);
+                    if (success) alert("✅ 連結已複製！\n您可以貼給朋友，他們將能查看並協作此行程。\n\n連結：" + shareUrl);
+                    else alert("複製失敗，請手動複製這段代碼分享給朋友：\n" + tripId);
+                }
+            };
+
             return ( 
             <div className="min-h-screen bg-[#FDFCF8] p-6 pb-24"> 
                 <div className="flex justify-between items-center mb-8 pt-4"> <h1 className="text-3xl font-black text-[#2b4f60] font-serif">My Trips</h1> <div className="flex gap-2"><button onClick={openCreateModal} className="bg-[#2b4f60] text-white p-2 rounded-full shadow-lg hover:bg-[#1e3a8a] transition-all"><Plus size={24}/></button></div> </div> 
@@ -1186,7 +1214,7 @@
                                 <div className="flex items-center gap-1 bg-stone-50 px-2 py-1 rounded text-xs text-stone-500 font-mono"><Key size={10} className="text-stone-400"/> {trip.id}</div> 
                                 <div className="flex gap-2"> 
                                     <button onClick={(e) => { e.stopPropagation(); openEditModal(trip); }} className="text-stone-400 hover:text-[#2b4f60] p-1.5 rounded-full hover:bg-stone-50" title="編輯"><Pencil size={16}/></button> 
-                                    <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); onShareTrip(trip.id); }} className="text-stone-400 hover:text-green-600 p-1.5 rounded-full hover:bg-green-50" title="複製分享連結"><LinkIcon size={16}/></button> 
+                                    <button onClick={(e) => handleShareClick(e, trip.id)} className="text-stone-400 hover:text-green-600 p-1.5 rounded-full hover:bg-green-50" title="分享行程"><Share2 size={16}/></button> 
                                     <button onClick={(e) => { e.stopPropagation(); setDeleteConfirmId(trip.id); }} className="text-stone-400 hover:text-red-500 p-1.5 rounded-full hover:bg-red-50" title="刪除"><Trash2 size={16}/></button> 
                                 </div> 
                             </div> 
@@ -1270,15 +1298,6 @@
           const handleAddTrip = (newTrip) => { const dateStr = newTrip.date.replace(/\D/g, ''); const visitorCode = Math.random().toString(36).substring(2, 6).toUpperCase(); const id = `trip-${dateStr}-#${visitorCode}`; const tripMeta = { title: newTrip.title, date: newTrip.date, cover: newTrip.cover || THEME_COLORS[0].value, emoji: newTrip.emoji || "✈️" }; const trip = { id, ...tripMeta, status: "planning", days: 1 }; setTrips([...(Array.isArray(trips) ? trips : []), trip]); if(user && db) { setDoc(doc(db, 'artifacts', appId, 'itineraries', id), { data: [{ day: 1, date: "Day 1", city: "城市", title: "旅程開始", themeColor: "gray", timeline: [] }], meta: tripMeta }); } };
           const handleEditTrip = (id, updatedData) => { setTrips((Array.isArray(trips) ? trips : []).map(t => t.id === id ? { ...t, ...updatedData } : t)); if(user && db) { setDoc(doc(db, 'artifacts', appId, 'itineraries', id), { meta: updatedData }, { merge: true }); } };
           const handleDeleteTrip = (id) => { setTrips((Array.isArray(trips) ? trips : []).filter(t => t.id !== id)); }; 
-          
-          const handleShareTrip = async (tripId) => {
-              if (!db) { alert("資料庫未連線"); return; }
-              const tripMeta = (Array.isArray(trips) ? trips : []).find(t => t.id === tripId);
-              if (!tripMeta) { alert("找不到行程資料"); return; }
-              const shareUrl = `${window.location.origin}${window.location.pathname}?share=${tripId}`;
-              copyToClipboard(shareUrl);
-              alert("✅ 連結已複製！\n您可以貼給朋友，他們將能查看並協作此行程。\n\n連結：" + shareUrl);
-          };
 
           const handleJoinTrip = async (codeOrUrl, isViewOnly = false) => {
               let code = codeOrUrl;
@@ -1310,7 +1329,6 @@
               setCurrentTripId(code);
               setIsReadOnly(isViewOnly);
               setActiveDay(1);
-              
               window.history.replaceState({}, document.title, window.location.pathname);
           };
 
@@ -1408,8 +1426,7 @@
               }
           };
 
-          const safeTrips = Array.isArray(trips) ? trips : [];
-          if (!currentTripId) { return ( <HomeView trips={safeTrips} onSelectTrip={(id)=>{ setIsReadOnly(false); setCurrentTripId(id); setActiveDay(1); }} onAddTrip={handleAddTrip} onEditTrip={handleEditTrip} onDeleteTrip={handleDeleteTrip} onShareTrip={handleShareTrip} onJoinTrip={handleJoinTrip} user={user} /> ); }
+          if (!currentTripId) { return ( <HomeView trips={Array.isArray(trips) ? trips : []} onSelectTrip={(id)=>{ setIsReadOnly(false); setCurrentTripId(id); setActiveDay(1); }} onAddTrip={handleAddTrip} onEditTrip={handleEditTrip} onDeleteTrip={handleDeleteTrip} onJoinTrip={handleJoinTrip} user={user} /> ); }
           
           if (!currentData && (Array.isArray(itinerary) ? itinerary : []).length > 0) { setActiveDay((Array.isArray(itinerary) ? itinerary : [])[0]?.day || 1); return <div className="p-10 text-center"><Loader2 className="animate-spin w-8 h-8 mx-auto mb-2 text-[#2b4f60]"/>載入中...</div>; }
           if (!currentData) return <div className="p-10 text-center">初始化行程...</div>; 
@@ -1450,30 +1467,19 @@
                                 <div ref={scrollRef} className="flex overflow-x-auto no-scrollbar py-3 px-4 gap-3 items-center">
                                     {(Array.isArray(itinerary) ? itinerary : []).map((d, index) => (
                                         <div key={d.day} className="relative group flex-shrink-0 flex flex-col items-center">
-                                            {isTimelineEditMode && !isReadOnly && (
-                                                <div className="absolute -top-3 flex gap-1 z-10 scale-75 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                    <button 
-                                                        disabled={index === 0}
-                                                        onClick={(e) => { e.stopPropagation(); handleMoveDay(d.day, -1); }} 
-                                                        className="bg-white border border-stone-200 rounded p-1 shadow hover:bg-stone-50 disabled:opacity-30"
-                                                    >
-                                                        <ChevronLeft size={12}/>
-                                                    </button>
-                                                    <button 
-                                                        disabled={index === (Array.isArray(itinerary) ? itinerary : []).length - 1}
-                                                        onClick={(e) => { e.stopPropagation(); handleMoveDay(d.day, 1); }} 
-                                                        className="bg-white border border-stone-200 rounded p-1 shadow hover:bg-stone-50 disabled:opacity-30"
-                                                    >
-                                                        <ChevronRight size={12}/>
-                                                    </button>
-                                                </div>
-                                            )}
-
                                             <button onClick={() => setActiveDay(d.day)} className={`flex flex-col items-center min-w-[4.5rem] py-2 rounded transition-all border ${activeDay === d.day ? `bg-[#2b4f60] text-[#FDFCF8] border-[#2b4f60] shadow-md` : 'bg-white border-stone-200 text-stone-400'}`}>
                                                 <span className="text-[10px] font-bold uppercase opacity-80 mb-0.5 font-serif">Day {d.day}</span>
                                                 {(isTimelineEditMode && !isReadOnly) ? ( <input value={d.date} onChange={(e) => handleUpdateDayDate(d.day, e.target.value)} className={`text-sm font-bold w-16 text-center bg-transparent border-b border-dashed outline-none ${activeDay === d.day ? 'text-white border-white/50' : 'text-stone-500 border-stone-300'}`} onClick={(e) => e.stopPropagation()} /> ) : ( <span className="text-sm font-bold">{d.date.split(' ')[0]}</span> )}
                                             </button>
-                                            {(isTimelineEditMode && !isReadOnly && (Array.isArray(itinerary) ? itinerary : []).length > 1) && ( <button onClick={(e) => handleDeleteDay(e, d.day)} className="absolute -bottom-2 w-4 h-4 bg-red-500 text-white rounded-full flex items-center justify-center shadow-sm z-10 hover:bg-red-600 border-2 border-white text-[10px]"> <X size={8} /> </button> )}
+                                            
+                                            {/* ✨ 修改 3：把 Day 順序移動和刪除按鍵移到下方 */}
+                                            {isTimelineEditMode && !isReadOnly && (
+                                                <div className="absolute -bottom-8 flex gap-1 z-10 scale-75 transition-opacity">
+                                                    <button disabled={index === 0} onClick={(e) => { e.stopPropagation(); handleMoveDay(d.day, -1); }} className="bg-white border border-stone-200 rounded p-1 shadow hover:bg-stone-50 disabled:opacity-30 text-stone-500"><ChevronLeft size={16}/></button>
+                                                    {(Array.isArray(itinerary) ? itinerary : []).length > 1 && ( <button onClick={(e) => handleDeleteDay(e, d.day)} className="bg-red-50 text-red-500 rounded p-1 shadow hover:bg-red-100 border border-red-100 mx-1"><Trash2 size={16}/></button> )}
+                                                    <button disabled={index === (Array.isArray(itinerary) ? itinerary : []).length - 1} onClick={(e) => { e.stopPropagation(); handleMoveDay(d.day, 1); }} className="bg-white border border-stone-200 rounded p-1 shadow hover:bg-stone-50 disabled:opacity-30 text-stone-500"><ChevronRight size={16}/></button>
+                                                </div>
+                                            )}
                                         </div>
                                     ))}
                                     {!isReadOnly && <button onClick={handleAddDay} className="flex-shrink-0 flex flex-col items-center justify-center min-w-[3rem] h-[3.5rem] rounded border border-dashed border-stone-300 text-stone-400 hover:bg-stone-50"><Plus size={20}/></button>}
@@ -1503,7 +1509,7 @@
                                 {(currentData.timeline || []).map((item, idx) => { 
                                     const isLast = idx === (currentData.timeline || []).length - 1; 
                                     return ( 
-                                        <div key={item.id} id={item.id} className={`${isTimelineEditMode ? "transition-all" : ""}`}> 
+                                        <div key={item.id} id={item.id} className={`${isTimelineEditMode ? "transition-all mt-4" : ""}`}> 
                                             <EventCard key={item.id} data={item} onUpdate={handleUpdateEvent} onAutoCoords={fetchCoordinates} isEditing={isTimelineEditMode} isReadOnly={isReadOnly} onDelete={() => confirmDelete(item.id)} isLast={isLast} isFirst={idx === 0} onEditStart={() => setEditingItemId(item.id)} onEditEnd={() => setEditingItemId(null)} onMoveUp={() => handleMoveItem(item.id, -1)} onMoveDown={() => handleMoveItem(item.id, 1)} onCopy={(item) => setCopyDialog({ isOpen: true, item })} /> 
                                         </div> 
                                     ); 
@@ -1557,8 +1563,7 @@
               
               <div className="bg-[#FDFCF8] border-t border-stone-200 pb-safe pt-2 px-2 grid grid-cols-5 shrink-0 z-30 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
                   <button onClick={() => setView('itinerary')} className={`flex flex-col items-center justify-center p-2 gap-1 transition-colors ${view === 'itinerary' ? 'text-[#2b4f60]' : 'text-stone-300 hover:text-stone-50'}`}> <BookOpen size={22} strokeWidth={view === 'itinerary' ? 2.5 : 2} /><span className="text-[10px] font-bold font-serif">行程</span> </button>
-                  <button onClick={() => setView('expenses')} className={`flex flex-col items-center justify-center p-2 gap-1 transition-colors ${view === 'expenses' ? 'text-[#2b4f60]' : 'text-stone-300 hover:text-stone-500'}`}> <Wallet size={22} strokeWidth={view === 'expenses' ? 2.5 : 2} /><span className="text-[10px] font-bold font-serif">記帳</span> </button>
-                  <button onClick={() => setView('packing')} className={`flex flex-col items-center justify-center p-2 gap-1 transition-colors ${view === 'packing' ? 'text-[#2b4f60]' : 'text-stone-300 hover:text-stone-500'}`}> <Luggage size={22} strokeWidth={view === 'packing' ? 2.5 : 2} /><span className="text-[10px] font-bold font-serif">行李</span> </button>
+                  <button onClick={() => setView('expenses')} className={`flex flex-col items-center justify-center p-2 gap-1 transition-colors ${view === 'expenses' ? 'text-[#2b4f60]' : 'text-stone-300 hover:text-stone-500'}`}> <Wallet size={22} strokeWidth={view === 'expenses' ? 2.5 : 2} /><span className="text-[10px] font-bold font-serif">行李</span> </button>
                   <button onClick={() => setView('translation')} className={`flex flex-col items-center justify-center p-2 gap-1 transition-colors ${view === 'translation' ? 'text-[#2b4f60]' : 'text-stone-300 hover:text-stone-500'}`}> <Languages size={22} strokeWidth={view === 'translation' ? 2.5 : 2} /><span className="text-[10px] font-bold font-serif">翻譯</span> </button>
                   <button onClick={() => setView('info')} className={`flex flex-col items-center justify-center p-2 gap-1 transition-colors ${view === 'info' ? 'text-[#2b4f60]' : 'text-stone-300 hover:text-stone-500'}`}> <Info size={22} strokeWidth={view === 'info' ? 2.5 : 2} /><span className="text-[10px] font-bold font-serif">資訊</span> </button>
               </div>
