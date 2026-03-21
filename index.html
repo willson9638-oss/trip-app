@@ -399,7 +399,7 @@
                 setData(JSON.parse(JSON.stringify(initialValue))); dataRef.current = JSON.parse(JSON.stringify(initialValue));
             }
             setIsLoaded(true);
-          }, [collectionName, docId, initialValue]); // 這裡加入了 initialValue 的依賴，確保切換預設值時會更新
+          }, [collectionName, docId]); // 移除 initialValue，防止重新渲染觸發覆寫
 
           useEffect(() => {
             if (!user || !db || !docId) return;
@@ -411,7 +411,8 @@
             }
 
             const unsubscribe = onSnapshot(docRef, (docSnap) => {
-              if (docSnap.exists) {
+              const isExist = typeof docSnap.exists === 'function' ? docSnap.exists() : docSnap.exists;
+              if (isExist) {
                 let cloudData = docSnap.data().data;
                 if (cloudData === undefined) cloudData = initialValue; 
 
@@ -427,7 +428,7 @@
                 if (error.code !== 'permission-denied') console.error("Firestore sync error:", error);
             });
             return () => unsubscribe();
-          }, [user, collectionName, docId, pathType, initialValue]);
+          }, [user, collectionName, docId, pathType]); // 移除 initialValue，防止無限迴圈
 
           const setValue = useCallback((newDataAction) => {
               const resolvedData = typeof newDataAction === 'function' ? newDataAction(dataRef.current) : newDataAction;
@@ -1271,9 +1272,11 @@
           const [isReadOnly, setIsReadOnly] = useState(false); 
           const [apiQuotaFull, setApiQuotaFull] = useState(false); 
 
-          const defaultItinerary = currentTripId === 'trip-2025-japan' 
-              ? INITIAL_ITINERARY_DATA 
-              : [{ day: 1, date: "Day 1", city: "城市", title: "載入中 / 新旅程", themeColor: "gray", timeline: [] }];
+          const defaultItinerary = useMemo(() => {
+              return currentTripId === 'trip-2025-japan' 
+                ? INITIAL_ITINERARY_DATA 
+                : [{ day: 1, date: "Day 1", city: "城市", title: "載入中 / 新旅程", themeColor: "gray", timeline: [] }];
+          }, [currentTripId]);
 
           const [itinerary, updateCurrentItinerary, isItinLoaded, itinSyncStatus] = usePersistentData('itineraries', currentTripId, defaultItinerary, user, 'shared');
 
@@ -1342,7 +1345,8 @@
                       try {
                           const docRef = doc(db, 'artifacts', appId, 'itineraries', code);
                           const docSnap = await getDoc(docRef);
-                          if (docSnap.exists() && docSnap.data().meta) {
+                          const isExist = typeof docSnap.exists === 'function' ? docSnap.exists() : docSnap.exists;
+                          if (isExist && docSnap.data().meta) {
                               newTrip = { id: code, ...docSnap.data().meta, isReadOnly: isViewOnly };
                           }
                       } catch(e) { console.error("Fetch meta error:", e); }
@@ -1478,7 +1482,8 @@
                             {globalSyncStatus === 'saving' && <RotateCw size={8} className="animate-spin"/>}
                             {globalSyncStatus === 'saved' && <CheckCircle size={8}/>}
                             {globalSyncStatus === 'error' && <X size={8}/>}
-                            {globalSyncStatus === 'saving' ? '儲存中...' : globalSyncStatus === 'saved' ? '已同步' : '儲存失敗'}
+                            {globalSyncStatus === 'saving' ? '儲存中...' : globalSyncStatus === 'saved' ? '已同步'
+                            : '儲存失敗'}
                         </div>
                     </div>
                 </div>
