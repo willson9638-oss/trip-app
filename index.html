@@ -353,7 +353,6 @@
             ]
           }
         ];
-
         let db, auth;
         let appId = "trip-app-d63a2"; 
 
@@ -399,7 +398,7 @@
                 setData(JSON.parse(JSON.stringify(initialValue))); dataRef.current = JSON.parse(JSON.stringify(initialValue));
             }
             setIsLoaded(true);
-          }, [collectionName, docId]); // 移除 initialValue，防止重新渲染觸發覆寫
+          }, [collectionName, docId]); // 不放入 initialValue 以免迴圈
 
           useEffect(() => {
             if (!user || !db || !docId) return;
@@ -428,7 +427,7 @@
                 if (error.code !== 'permission-denied') console.error("Firestore sync error:", error);
             });
             return () => unsubscribe();
-          }, [user, collectionName, docId, pathType]); // 移除 initialValue，防止無限迴圈
+          }, [user, collectionName, docId, pathType]);
 
           const setValue = useCallback((newDataAction) => {
               const resolvedData = typeof newDataAction === 'function' ? newDataAction(dataRef.current) : newDataAction;
@@ -1303,11 +1302,26 @@
           }, [tripsSyncStatus, itinSyncStatus, currentTripId]);
 
           useEffect(() => {
-              const params = new URLSearchParams(window.location.search);
-              const shareId = params.get('share');
-              const readOnlyParam = params.get('ro');
-              if (shareId) {
-                  handleJoinTrip(shareId, readOnlyParam === '1');
+              const fullUrl = window.location.href;
+              if (fullUrl.includes('share=')) {
+                  try {
+                      const url = new URL(fullUrl);
+                      let shareId = url.searchParams.get('share');
+                      let isRo = url.searchParams.get('ro') === '1';
+
+                      if (shareId && url.hash) {
+                          let hashStr = url.hash;
+                          if (hashStr.includes('&ro=1')) {
+                              isRo = true;
+                              hashStr = hashStr.replace('&ro=1', '');
+                          }
+                          shareId += hashStr;
+                      }
+
+                      if (shareId) {
+                          handleJoinTrip(shareId, isRo);
+                      }
+                  } catch(e) {}
               }
           }, [user]);
 
@@ -1318,7 +1332,15 @@
 
           const getActiveRouteKey = (day, currentRouteState) => { if (!day.hasRoutes) return null; const keys = Object.keys(day.routes); return (currentRouteState && day.routes[currentRouteState]) ? currentRouteState : keys[0]; };
           
-          const handleAddTrip = (newTrip) => { const dateStr = newTrip.date.replace(/\D/g, ''); const visitorCode = Math.random().toString(36).substring(2, 6).toUpperCase(); const id = `trip-${dateStr}-#${visitorCode}`; const tripMeta = { title: newTrip.title, date: newTrip.date, cover: newTrip.cover || THEME_COLORS[0].value, emoji: newTrip.emoji || "✈️" }; const trip = { id, ...tripMeta, status: "planning", days: 1, isReadOnly: false }; setTrips([...(Array.isArray(trips) ? trips : []), trip]); if(user && db) { setDoc(doc(db, 'artifacts', appId, 'itineraries', id), { data: [{ day: 1, date: "Day 1", city: "城市", title: "旅程開始", themeColor: "gray", timeline: [] }], meta: tripMeta }); } };
+          const handleAddTrip = (newTrip) => { 
+              const dateStr = newTrip.date.replace(/\D/g, ''); 
+              const visitorCode = Math.random().toString(36).substring(2, 6).toUpperCase(); 
+              const id = `trip-${dateStr}-${visitorCode}`; 
+              const tripMeta = { title: newTrip.title, date: newTrip.date, cover: newTrip.cover || THEME_COLORS[0].value, emoji: newTrip.emoji || "✈️" }; 
+              const trip = { id, ...tripMeta, status: "planning", days: 1, isReadOnly: false }; 
+              setTrips([...(Array.isArray(trips) ? trips : []), trip]); 
+              if(user && db) { setDoc(doc(db, 'artifacts', appId, 'itineraries', id), { data: [{ day: 1, date: "Day 1", city: "城市", title: "旅程開始", themeColor: "gray", timeline: [] }], meta: tripMeta }); } 
+          };
           const handleEditTrip = (id, updatedData) => { setTrips((Array.isArray(trips) ? trips : []).map(t => t.id === id ? { ...t, ...updatedData } : t)); if(user && db) { setDoc(doc(db, 'artifacts', appId, 'itineraries', id), { meta: updatedData }, { merge: true }); } };
           const handleDeleteTrip = (id) => { setTrips((Array.isArray(trips) ? trips : []).filter(t => t.id !== id)); }; 
           
@@ -1326,28 +1348,45 @@
               if (!db) { alert("資料庫未連線"); return; }
               const tripMeta = (Array.isArray(trips) ? trips : []).find(t => t.id === tripId);
               if (!tripMeta) { alert("找不到行程資料"); return; }
-              const shareUrl = `${window.location.origin}${window.location.pathname}?share=${tripId}${isReadOnlyMode ? '&ro=1' : ''}`;
+              const shareUrl = `${window.location.origin}${window.location.pathname}?share=${encodeURIComponent(tripId)}${isReadOnlyMode ? '&ro=1' : ''}`;
               copyToClipboard(shareUrl);
               alert(`✅ 連結已複製！\n您可以貼給朋友，他們將能以「${isReadOnlyMode ? '唯讀' : '協作編輯'}」模式查看此行程。\n\n連結：${shareUrl}`);
           };
 
           const handleJoinTrip = async (codeOrUrl, isViewOnly = false) => {
-              let code = codeOrUrl;
-              if (codeOrUrl.includes('share=')) { code = new URLSearchParams(codeOrUrl.split('?')[1]).get('share'); }
+              let code = codeOrUrl.trim();
+              let finalIsReadOnly = isViewOnly;
+
+              if (code.startsWith('http')) {
+                  try {
+                      const url = new URL(code);
+                      code = url.searchParams.get('share');
+                      if (url.searchParams.get('ro') === '1') finalIsReadOnly = true;
+                      if (code && url.hash) {
+                          let hashStr = url.hash;
+                          if (hashStr.includes('&ro=1')) {
+                              finalIsReadOnly = true;
+                              hashStr = hashStr.replace('&ro=1', '');
+                          }
+                          code += hashStr;
+                      }
+                  } catch(e) { }
+              }
+              
               if (!code) return;
               
               const safeTrips = Array.isArray(trips) ? trips : [];
               const exists = safeTrips.find(t => t.id === code);
               
               if (!exists) {
-                  let newTrip = { id: code, title: "分享行程 (同步中...)", date: "未設定", emoji: "🔗", cover: THEME_COLORS[0].value, isReadOnly: isViewOnly };
+                  let newTrip = { id: code, title: "分享行程 (同步中...)", date: "未設定", emoji: "🔗", cover: THEME_COLORS[0].value, isReadOnly: finalIsReadOnly };
                   if (db) {
                       try {
                           const docRef = doc(db, 'artifacts', appId, 'itineraries', code);
                           const docSnap = await getDoc(docRef);
                           const isExist = typeof docSnap.exists === 'function' ? docSnap.exists() : docSnap.exists;
                           if (isExist && docSnap.data().meta) {
-                              newTrip = { id: code, ...docSnap.data().meta, isReadOnly: isViewOnly };
+                              newTrip = { id: code, ...docSnap.data().meta, isReadOnly: finalIsReadOnly };
                           }
                       } catch(e) { console.error("Fetch meta error:", e); }
                   }
@@ -1357,12 +1396,12 @@
                       if(safe.find(t => t.id === code)) return safe;
                       return [...safe, newTrip];
                   });
-              } else if (exists.isReadOnly !== isViewOnly) {
-                  setTrips(prev => (Array.isArray(prev) ? prev : []).map(t => t.id === code ? { ...t, isReadOnly: isViewOnly } : t));
+              } else if (exists.isReadOnly !== finalIsReadOnly) {
+                  setTrips(prev => (Array.isArray(prev) ? prev : []).map(t => t.id === code ? { ...t, isReadOnly: finalIsReadOnly } : t));
               }
               
               setCurrentTripId(code);
-              setIsReadOnly(isViewOnly);
+              setIsReadOnly(finalIsReadOnly);
               setActiveDay(1);
               
               window.history.replaceState({}, document.title, window.location.pathname);
@@ -1482,8 +1521,7 @@
                             {globalSyncStatus === 'saving' && <RotateCw size={8} className="animate-spin"/>}
                             {globalSyncStatus === 'saved' && <CheckCircle size={8}/>}
                             {globalSyncStatus === 'error' && <X size={8}/>}
-                            {globalSyncStatus === 'saving' ? '儲存中...' : globalSyncStatus === 'saved' ? '已同步'
-                            : '儲存失敗'}
+                            {globalSyncStatus === 'saving' ? '儲存中...' : globalSyncStatus === 'saved' ? '已同步' : '儲存失敗'}
                         </div>
                     </div>
                 </div>
@@ -1524,7 +1562,7 @@
                                                 </div>
                                             )}
 
-                                            <button onClick={() => setActiveDay(d.day)} className={`flex flex-col items-center min-w-[4.5rem] py-2 rounded transition-all border ${activeDay === d.day ? `bg-[#2b4f60] text-[#FDFCF8] border-[#2b4f60] shadow-md` : 'bg-white border-stone-200 text-stone-400'}`}>
+                                            <button onClick={() => setActiveDay(d.day)} className={`flex flex-col items-center min-w-[4.5rem] py-2 rounded transition-all border ${activeDay === d.day ? 'bg-[#2b4f60] text-[#FDFCF8] border-[#2b4f60] shadow-md' : 'bg-white border-stone-200 text-stone-400'}`}>
                                                 <span className="text-[10px] font-bold uppercase opacity-80 mb-0.5 font-serif">Day {d.day}</span>
                                                 {(isTimelineEditMode && !isReadOnly) ? ( <input value={d.date} onChange={(e) => handleUpdateDayDate(d.day, e.target.value)} className={`text-sm font-bold w-16 text-center bg-transparent border-b border-dashed outline-none ${activeDay === d.day ? 'text-white border-white/50' : 'text-stone-500 border-stone-300'}`} onClick={(e) => e.stopPropagation()} /> ) : ( <span className="text-sm font-bold">{d.date.split(' ')[0]}</span> )}
                                             </button>
