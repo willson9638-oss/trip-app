@@ -735,16 +735,11 @@
                       )}
                   </div>
                   {isEditing && !isEditMode && !isReadOnly && (
-                      <div className="flex flex-col gap-2 p-2 bg-stone-50 border-t border-stone-100">
-                          <div className="flex gap-2 items-center">
-                              <button onClick={()=>{setIsEditMode(true); if(onEditStart) onEditStart();}} className="flex-1 bg-white border border-stone-200 text-stone-600 py-1.5 rounded text-xs font-bold flex items-center justify-center gap-1 hover:bg-stone-100"><Pencil size={12}/> 修改</button>
-                              <button onClick={() => onCopy(data)} className="w-12 bg-white border border-stone-200 text-stone-500 py-1.5 rounded flex items-center justify-center hover:bg-stone-100" title="複製"><Copy size={12}/></button>
-                              <button onClick={onDelete} className="w-12 bg-white border border-red-100 text-red-500 py-1.5 rounded flex items-center justify-center hover:bg-red-50"><Trash2 size={12}/></button>
-                          </div>
-                          <div className="flex gap-2">
-                              <button onClick={onMoveUp} disabled={isFirst} className={`flex-1 py-1.5 rounded border border-stone-200 flex items-center justify-center gap-1 text-xs font-bold ${isFirst ? 'bg-stone-50 text-stone-300' : 'bg-white text-stone-600 hover:bg-stone-100'}`}><ChevronUp size={14}/> 上移</button>
-                              <button onClick={onMoveDown} disabled={isLast} className={`flex-1 py-1.5 rounded border border-stone-200 flex items-center justify-center gap-1 text-xs font-bold ${isLast ? 'bg-stone-50 text-stone-300' : 'bg-white text-stone-600 hover:bg-stone-100'}`}><ChevronDown size={14}/> 下移</button>
-                          </div>
+                      <div className="flex gap-2 p-2 bg-stone-50 border-t border-stone-100 items-center">
+                          <button onClick={()=>{setIsEditMode(true); if(onEditStart) onEditStart();}} className="flex-1 bg-white border border-stone-200 text-stone-600 py-1.5 rounded text-xs font-bold flex items-center justify-center gap-1 hover:bg-stone-100"><Pencil size={12}/> 修改</button>
+                          <button onClick={() => onCopy(data)} className="w-12 bg-white border border-stone-200 text-stone-500 py-1.5 rounded flex items-center justify-center hover:bg-stone-100" title="複製"><Copy size={12}/></button>
+                          <div className="flex gap-1 border-l border-stone-200 pl-2"><button onClick={onMoveUp} disabled={isFirst} className={`p-1.5 rounded border border-stone-200 ${isFirst ? 'bg-stone-50 text-stone-300' : 'bg-white text-stone-600 hover:bg-stone-100'}`}><ChevronUp size={14}/></button><button onClick={onMoveDown} disabled={isLast} className={`p-1.5 rounded border border-stone-200 ${isLast ? 'bg-stone-50 text-stone-300' : 'bg-white text-stone-600 hover:bg-stone-100'}`}><ChevronDown size={14}/></button></div>
+                          <button onClick={onDelete} className="w-8 bg-white border border-red-100 text-red-500 py-1.5 rounded flex items-center justify-center hover:bg-red-50"><Trash2 size={12}/></button>
                       </div>
                   )}
                 </div>
@@ -771,23 +766,17 @@
                   <div className="flex justify-between items-center w-full"><div><div className="font-bold text-stone-700 flex items-center gap-2 font-serif">{data.name} {data.duration && (<span className="text-[10px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded border border-blue-100 flex items-center gap-1 font-mono"><Clock size={10}/> {data.duration}</span>)}</div><div className="text-xs text-stone-500 mt-0.5 whitespace-pre-wrap">{String(data.desc || '')}</div></div>{!isWalk && (<div className="text-right"><div className="font-bold text-stone-700 font-serif">{data.cost ? (typeof data.cost === 'number' ? data.cost.toLocaleString() : data.cost) : ''}</div></div>)}</div>
                 )}
                 {isEditing && !isEditMode && !isReadOnly && (
-                    <div className="flex flex-col gap-2 mt-3 pt-2 border-t border-stone-200/50 w-full">
-                        <div className="flex gap-2 items-center">
-                            <button onClick={()=>{setIsEditMode(true); if(onEditStart) onEditStart();}} className="flex-1 bg-white text-stone-600 border border-stone-200 py-1.5 rounded text-xs font-bold flex items-center justify-center gap-1 hover:bg-stone-50"><Pencil size={12}/> 修改</button>
-                            <button onClick={() => onCopy(data)} className="w-12 bg-white border border-stone-200 text-stone-500 py-1.5 rounded flex items-center justify-center hover:bg-stone-50" title="複製"><Copy size={12}/></button>
-                            <button onClick={onDelete} className="w-12 bg-white text-red-500 border border-red-100 py-1.5 rounded flex items-center justify-center hover:bg-red-50"><Trash2 size={12}/></button>
-                        </div>
-                        <div className="flex gap-2">
-                            <button onClick={onMoveUp} disabled={isFirst} className={`flex-1 py-1.5 rounded border border-stone-200 flex items-center justify-center gap-1 text-xs font-bold ${isFirst ? 'bg-stone-50 text-stone-300' : 'bg-white text-stone-600 hover:bg-stone-100'}`}><ChevronUp size={14}/> 上移</button>
-                            <button onClick={onMoveDown} disabled={isLast} className={`flex-1 py-1.5 rounded border border-stone-200 flex items-center justify-center gap-1 text-xs font-bold ${isLast ? 'bg-stone-50 text-stone-300' : 'bg-white text-stone-600 hover:bg-stone-100'}`}><ChevronDown size={14}/> 下移</button>
-                        </div>
+                    <div className="flex gap-2 mt-3 pt-2 border-t border-stone-200/50 w-full items-center">
+                        <button onClick={()=>{setIsEditMode(true); if(onEditStart) onEditStart();}} className="flex-1 bg-white text-stone-600 border border-stone-200 py-1 rounded text-xs font-bold flex items-center justify-center gap-1 hover:bg-stone-50"><Pencil size={10}/> 修改</button>
+                        <button onClick={() => onCopy(data)} className="w-12 bg-white border border-stone-200 text-stone-500 py-1 rounded flex items-center justify-center hover:bg-stone-50" title="複製"><Copy size={10}/></button>
+                        <div className="flex gap-1"><button onClick={onMoveUp} disabled={isFirst} className={`p-1 rounded border border-stone-200 ${isFirst ? 'bg-stone-50 text-stone-300' : 'bg-white text-stone-600 hover:bg-stone-100'}`}><ChevronUp size={10}/></button><button onClick={onMoveDown} disabled={isLast} className={`p-1 rounded border border-stone-200 ${isLast ? 'bg-stone-50 text-stone-300' : 'bg-white text-stone-600 hover:bg-stone-100'}`}><ChevronDown size={10}/></button></div>
+                        <button onClick={onDelete} className="w-8 bg-white text-red-500 border border-stone-200 py-1 rounded flex items-center justify-center hover:bg-red-50"><Trash2 size={10}/></button>
                     </div>
                 )}
               </div>
             </div>
           );
         };
-
         const EventCard = ({ data, onUpdate, isEditing, onDelete, onAutoCoords, isReadOnly, onMoveUp, onMoveDown, isFirst, isLast, onEditStart, onEditEnd, onCopy }) => {
           const [isExpanded, setIsExpanded] = useState(false);
           const [isLocalEditing, setIsLocalEditing] = useState(false);
@@ -800,7 +789,7 @@
           
           const isAirport = data.icon === 'airport';
 
-          // 即時同步保護：本地編輯時忽略雲端更新
+          // ✨ 即時同步保護：本地編輯時忽略雲端更新
           useEffect(() => {
               if (!isLocalEditing) {
                   setEditData({ ...data });
@@ -880,16 +869,11 @@
 
                       <div className="flex justify-between items-center mt-2 border-t border-stone-50 pt-1"><button onClick={() => setIsExpanded(!isExpanded)} className="text-[10px] text-[#2b4f60] font-bold hover:underline w-full text-center py-1" onMouseDown={(e) => e.stopPropagation()}>{isExpanded ? '收起' : '詳細'}</button></div>
                       {isEditing && !isReadOnly && (
-                          <div className="flex flex-col gap-2 mt-2 pt-2 border-t border-stone-100">
-                              <div className="flex gap-2 items-center">
-                                  <button onClick={()=>{setTempSubItems(data.subItems ? data.subItems.map(i => i.text).join("\n") : ""); setIsLocalEditing(true); if(onEditStart) onEditStart();}} className="flex-1 bg-stone-100 text-stone-600 py-1.5 rounded text-xs font-bold flex items-center justify-center gap-1 hover:bg-stone-200"><Pencil size={12}/> 修改</button>
-                                  <button onClick={() => onCopy(data)} className="w-12 bg-white text-stone-500 border border-stone-200 py-1.5 rounded flex items-center justify-center hover:bg-stone-100" title="複製"><Copy size={12}/></button>
-                                  <button onClick={onDelete} className="w-12 bg-white text-red-500 border border-red-100 py-1.5 rounded flex items-center justify-center hover:bg-red-200"><Trash2 size={12}/></button>
-                              </div>
-                              <div className="flex gap-2">
-                                  <button onClick={onMoveUp} disabled={isFirst} className={`flex-1 py-1.5 rounded border border-stone-200 flex items-center justify-center gap-1 text-xs font-bold ${isFirst ? 'bg-stone-50 text-stone-300' : 'bg-white text-stone-600 hover:bg-stone-100'}`}><ChevronUp size={14}/> 上移</button>
-                                  <button onClick={onMoveDown} disabled={isLast} className={`flex-1 py-1.5 rounded border border-stone-200 flex items-center justify-center gap-1 text-xs font-bold ${isLast ? 'bg-stone-50 text-stone-300' : 'bg-white text-stone-600 hover:bg-stone-100'}`}><ChevronDown size={14}/> 下移</button>
-                              </div>
+                          <div className="flex gap-2 mt-2 pt-2 border-t border-stone-100 items-center">
+                              <button onClick={()=>{setTempSubItems(data.subItems ? data.subItems.map(i => i.text).join("\n") : ""); setIsLocalEditing(true); if(onEditStart) onEditStart();}} className="flex-1 bg-stone-100 text-stone-600 py-1.5 rounded text-xs font-bold flex items-center justify-center gap-1 hover:bg-stone-200"><Pencil size={12}/> 修改</button>
+                              <button onClick={() => onCopy(data)} className="w-12 bg-white text-stone-500 border border-stone-200 py-1.5 rounded flex items-center justify-center hover:bg-stone-100" title="複製"><Copy size={12}/></button>
+                              <div className="flex gap-1 border-l border-stone-200 pl-2"><button onClick={onMoveUp} disabled={isFirst} className={`p-1.5 rounded border border-stone-200 ${isFirst ? 'bg-stone-50 text-stone-300' : 'bg-white text-stone-600 hover:bg-stone-100'}`}><ChevronUp size={14}/></button><button onClick={onMoveDown} disabled={isLast} className={`p-1.5 rounded border border-stone-200 ${isLast ? 'bg-stone-50 text-stone-300' : 'bg-white text-stone-600 hover:bg-stone-100'}`}><ChevronDown size={14}/></button></div>
+                              <button onClick={onDelete} className="w-8 bg-white text-red-500 border border-red-100 py-1.5 rounded flex items-center justify-center hover:bg-red-200"><Trash2 size={12}/></button>
                           </div>
                       )}
                     </React.Fragment>
@@ -1415,7 +1399,27 @@
           
           const handleUpdateDayInfo = () => { 
               if(isReadOnly) return; 
-              const newItinerary = (Array.isArray(itinerary) ? itinerary : []).map(d => d.day === activeDay ? { ...d, ...editDayData } : d); 
+              const newItinerary = (Array.isArray(itinerary) ? itinerary : []).map(d => {
+                  if (d.day === activeDay) {
+                      if (d.hasRoutes) {
+                          const currentKey = getActiveRouteKey(d, route);
+                          return {
+                              ...d,
+                              date: editDayData.date,
+                              routes: {
+                                  ...d.routes,
+                                  [currentKey]: {
+                                      ...d.routes[currentKey],
+                                      title: editDayData.title,
+                                      city: editDayData.city
+                                  }
+                              }
+                          };
+                      }
+                      return { ...d, ...editDayData }; 
+                  }
+                  return d;
+              });
               updateCurrentItinerary(newItinerary); 
               setIsEditingDay(false); 
           };
@@ -1442,12 +1446,77 @@
               setActiveDay(newIndex + 1); 
           };
 
-          const handleEnableBranches = () => { if(isReadOnly) return; const newItinerary = (Array.isArray(itinerary) ? itinerary : []).map(d => { if (d.day !== activeDay) return d; return { ...d, hasRoutes: true, routes: { A: { name: "主要路線", icon: 'map', timeline: [...(d.timeline||[])] } }, timeline: [] }; }); updateCurrentItinerary(newItinerary); setRoute('A'); };
-          const handleAddRoute = () => { if(isReadOnly) return; const safeItin = Array.isArray(itinerary) ? itinerary : []; const day = safeItin.find(d => d.day === activeDay); if (!day) return; const existingKeys = Object.keys(day.routes || {}); const newKey = String.fromCharCode(65 + existingKeys.length); const newItinerary = safeItin.map(d => { if (d.day !== activeDay) return d; return { ...d, routes: { ...d.routes, [newKey]: { name: `新路線 ${newKey}`, icon: 'map', timeline: [] } } }; }); updateCurrentItinerary(newItinerary); setRoute(newKey); };
+          const handleEnableBranches = () => { 
+              if(isReadOnly) return; 
+              const newItinerary = (Array.isArray(itinerary) ? itinerary : []).map(d => { 
+                  if (d.day !== activeDay) return d; 
+                  return { 
+                      ...d, 
+                      hasRoutes: true, 
+                      routes: { 
+                          A: { 
+                              name: "主要路線", 
+                              title: d.title,
+                              city: d.city,
+                              icon: 'map', 
+                              timeline: [...(d.timeline||[])] 
+                          } 
+                      }, 
+                      timeline: [] 
+                  }; 
+              }); 
+              updateCurrentItinerary(newItinerary); 
+              setRoute('A'); 
+          };
+
+          const handleAddRoute = () => { 
+              if(isReadOnly) return; 
+              const safeItin = Array.isArray(itinerary) ? itinerary : []; 
+              const day = safeItin.find(d => d.day === activeDay); 
+              if (!day) return; 
+              const existingKeys = Object.keys(day.routes || {}); 
+              const newKey = String.fromCharCode(65 + existingKeys.length); 
+              const currentKey = getActiveRouteKey(day, route);
+              const newItinerary = safeItin.map(d => { 
+                  if (d.day !== activeDay) return d; 
+                  return { 
+                      ...d, 
+                      routes: { 
+                          ...d.routes, 
+                          [newKey]: { 
+                              name: `新路線 ${newKey}`, 
+                              title: d.routes[currentKey]?.title || d.title,
+                              city: d.routes[currentKey]?.city || d.city,
+                              icon: 'map', 
+                              timeline: [] 
+                          } 
+                      } 
+                  }; 
+              }); 
+              updateCurrentItinerary(newItinerary); 
+              setRoute(newKey); 
+          };
+
           const handleUpdateDayDate = (dayNum, newDate) => { if(isReadOnly) return; const newItinerary = (Array.isArray(itinerary) ? itinerary : []).map(d => d.day === dayNum ? { ...d, date: newDate } : d); updateCurrentItinerary(newItinerary); };
           const handleDeleteDay = (e, dayNum) => { if(isReadOnly) return; e.stopPropagation(); const safeItin = Array.isArray(itinerary) ? itinerary : []; if(safeItin.length <= 1) return; const newItinerary = safeItin.filter(d => d.day !== dayNum).map((d, idx) => ({ ...d, day: idx + 1, date: d.day > dayNum ? d.date : d.date })); updateCurrentItinerary(newItinerary); if(activeDay === dayNum) setActiveDay(1); else if(activeDay > dayNum) setActiveDay(activeDay - 1); };
           
-          const currentData = useMemo(() => { if (!Array.isArray(itinerary) || !itinerary.length) return null; const base = itinerary.find(d => d.day === activeDay); if (!base) return itinerary[0]; if (base.hasRoutes) { const routeKeys = Object.keys(base.routes); const currentRouteKey = (route && base.routes[route]) ? route : routeKeys[0]; const selectedRoute = base.routes[currentRouteKey] || { name: "Loading", timeline: [] }; return { ...base, title: selectedRoute.name, timeline: selectedRoute.timeline, city: selectedRoute.city || base.city }; } return base; }, [activeDay, route, itinerary]);
+          const currentData = useMemo(() => { 
+              if (!Array.isArray(itinerary) || !itinerary.length) return null; 
+              const base = itinerary.find(d => d.day === activeDay); 
+              if (!base) return itinerary[0]; 
+              if (base.hasRoutes) { 
+                  const routeKeys = Object.keys(base.routes); 
+                  const currentRouteKey = (route && base.routes[route]) ? route : routeKeys[0]; 
+                  const selectedRoute = base.routes[currentRouteKey] || { name: "Loading", timeline: [] }; 
+                  return { 
+                      ...base, 
+                      title: selectedRoute.title || base.title, 
+                      city: selectedRoute.city || base.city,
+                      timeline: selectedRoute.timeline 
+                  }; 
+              } 
+              return base; 
+          }, [activeDay, route, itinerary]);
           
           useEffect(() => { if (scrollRef.current && view === 'itinerary') { const activeBtn = scrollRef.current.children[activeDay - 1]; if (activeBtn) activeBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' }); } }, [activeDay, view]);
           
@@ -1543,7 +1612,7 @@
                             <LeafletMap itinerary={Array.isArray(itinerary) ? itinerary : []} activeDay={activeDay} onMarkerDrag={handleMarkerDrag} isEditMode={isMapEditMode && !isReadOnly} onToggleEditMode={() => setIsMapEditMode(!isMapEditMode)} onEventUpdate={handleUpdateEvent} onHideEvent={handleHideEvent} onMarkerClick={(item) => !isReadOnly && setMapEditDialog({isOpen: true, data: item})} />
                           </div>
                           <div className="animate-fade-in pb-24 bg-[#f4f4f0] relative z-10">
-                            <div className="bg-[#FDFCF8]/95 backdrop-blur-sm border-b border-stone-200 shadow-sm sticky top-0 z-20">
+                          <div className="bg-[#FDFCF8]/95 backdrop-blur-sm border-b border-stone-200 shadow-sm sticky top-0 z-20">
                                 <div ref={scrollRef} className="flex overflow-x-auto no-scrollbar py-3 px-4 gap-3 items-center">
                                     {(Array.isArray(itinerary) ? itinerary : []).map((d, index) => (
                                         <div key={d.day} className="relative group flex-shrink-0 flex flex-col items-center">
@@ -1578,7 +1647,7 @@
                             </div>
                             
                             <div className="px-4 py-6">
-                              <div className={`mb-6 pl-3 border-l-4 border-${currentData.themeColor}-600 flex justify-between items-end`}>
+                              <div className={`mb-6 pl-3 border-l-4 border-${currentData.themeColor || 'indigo'}-600 flex justify-between items-end`}>
                                 {(isEditingDay && !isReadOnly) ? ( 
                                     <div className="space-y-2 w-full mr-2">
                                         <input className="w-full p-1 border rounded text-lg font-bold" value={editDayData.title} onChange={e=>setEditDayData({...editDayData, title:e.target.value})} placeholder="標題"/>
