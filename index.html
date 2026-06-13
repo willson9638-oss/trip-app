@@ -480,17 +480,45 @@
             try {
               const prompt = `Find the precise latitude and longitude for "${location}". Return ONLY a valid JSON object with "lat" and "lng" number properties. Example: {"lat": 35.6895, "lng": 139.6917}. Do not include markdown code blocks or any other text.`;
               const response = await fetchWithBackoff(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${localApiKey}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) });
+              
+              if (response.status === 429) throw new Error("QUOTA_EXCEEDED");
+              
               if (response.ok) {
                   const data = await response.json();
                   let text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-                  if (text) { text = text.replace(/```json/g, '').replace(/```/g, '').trim(); const jsonMatch = text.match(/\{[\s\S]*\}/); if (jsonMatch) { return JSON.parse(jsonMatch[0]); } }
+                  if (text) { 
+                      text = text.replace(/```json/g, '').replace(/```/g, '').trim(); 
+                      const jsonMatch = text.match(/\{[\s\S]*\}/); 
+                      if (jsonMatch) { 
+                          const parsed = JSON.parse(jsonMatch[0]);
+                          
+                          const cleanCoord = (val) => {
+                              let str = String(val).trim();
+                              const parts = str.split('.');
+                              if (parts.length > 2) {
+                                  str = parts[0] + '.' + parts.slice(1).join('');
+                              }
+                              return parseFloat(str);
+                          };
+
+                          if (parsed.lat && parsed.lng) {
+                              return {
+                                  lat: cleanCoord(parsed.lat),
+                                  lng: cleanCoord(parsed.lng)
+                              };
+                          }
+                      } 
+                  }
               }
-            } catch (e) { console.warn("AI Geocoding skipped:", e.message); }
+            } catch (e) { 
+                console.warn("AI Geocoding skipped:", e.message); 
+                if (e.message === "QUOTA_EXCEEDED") throw e;
+            }
           } 
           try {
             const geoRes = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(location)}&count=1&language=zh&format=json`);
             const geoData = await geoRes.json();
-            if (geoData.results?.length > 0) return { lat: geoData.results[0].latitude, lng: geoData.results[0].longitude };
+            if (geoData.results?.length > 0) return { lat: parseFloat(geoData.results[0].latitude), lng: parseFloat(geoData.results[0].longitude) };
           } catch (e) { console.error("Standard Geocoding failed:", e); }
           return null;
         };
@@ -570,15 +598,42 @@
             const dayData = itinerary.find(d => d.day === activeDay);
             if (!dayData) return [];
             let allItems = [];
+
+            const isValidCoordinate = (val) => {
+              if (val === null || val === undefined || val === '') return false;
+              const str = String(val).trim();
+              if ((str.match(/\./g) || []).length > 1) return false; 
+              const num = parseFloat(str);
+              return !isNaN(num) && isFinite(num);
+            };
+
             if (dayData.hasRoutes && dayData.routes) {
                 Object.entries(dayData.routes).forEach(([routeKey, routeData], index) => {
                     if (!routeData || !Array.isArray(routeData.timeline)) return;
                     const color = ROUTE_COLORS[index % ROUTE_COLORS.length];
-                    const routeItems = routeData.timeline.filter(i => i.lat && i.lng && i.icon !== 'plane' && i.type !== 'flight' && !i.hideOnMap).map((i, idx) => ({ ...i, label: `${idx + 1}`, routeColor: color, routeKey: routeKey }));
+                    const routeItems = routeData.timeline
+                        .filter(i => isValidCoordinate(i.lat) && isValidCoordinate(i.lng) && i.icon !== 'plane' && i.type !== 'flight' && !i.hideOnMap)
+                        .map((i, idx) => ({ 
+                            ...i, 
+                            lat: parseFloat(i.lat),
+                            lng: parseFloat(i.lng),
+                            label: `${idx + 1}`, 
+                            routeColor: color, 
+                            routeKey: routeKey 
+                        }));
                     allItems.push(...routeItems);
                 });
             } else if (Array.isArray(dayData.timeline)) {
-                allItems = dayData.timeline.filter(i => i.lat && i.lng && i.icon !== 'plane' && i.type !== 'flight' && !i.hideOnMap).map((i, idx) => ({ ...i, label: `${idx + 1}`, routeColor: '#2b4f60', routeKey: 'main' }));
+                allItems = dayData.timeline
+                    .filter(i => isValidCoordinate(i.lat) && isValidCoordinate(i.lng) && i.icon !== 'plane' && i.type !== 'flight' && !i.hideOnMap)
+                    .map((i, idx) => ({ 
+                        ...i, 
+                        lat: parseFloat(i.lat),
+                        lng: parseFloat(i.lng),
+                        label: `${idx + 1}`, 
+                        routeColor: '#2b4f60', 
+                        routeKey: 'main' 
+                    }));
             }
             return allItems;
           }, [itinerary, activeDay]);
@@ -789,7 +844,6 @@
           
           const isAirport = data.icon === 'airport';
 
-          // ✨ 即時同步保護：本地編輯時忽略雲端更新
           useEffect(() => {
               if (!isLocalEditing) {
                   setEditData({ ...data });
@@ -807,10 +861,21 @@
                   setIsSearching(true); 
                   const query = (editData.location && editData.location !== "未設定") ? editData.location : editData.title; 
                   if (!query || query === "未設定" || query === "新項目") { setIsSearching(false); alert("請先輸入有效的地點名稱！"); return; } 
-                  const coords = await onAutoCoords(query); 
-                  setIsSearching(false); 
-                  if(coords && coords.lat) { setEditData({...editData, lat: coords.lat, lng: coords.lng}); } 
-                  else { alert("找不到該地點的座標，請嘗試輸入更完整的名稱，或檢查 API Key。"); }
+                  try {
+                      const coords = await onAutoCoords(query); 
+                      setIsSearching(true); 
+                      if(coords && !isNaN(coords.lat)) { setEditData({...editData, lat: coords.lat, lng: coords.lng}); } 
+                      else { alert("找不到該地點的座標，請手動輸入更完整的名稱，或檢查 API Key。"); }
+                  } catch (err) {
+                      setIsSearching(false);
+                      if (err.message === "QUOTA_EXCEEDED") {
+                          alert("⚠️ Gemini API 免費配額已滿（錯誤 429）。App 已將此要求導向至備用網頁搜尋，請點擊確認重試一次。");
+                      } else {
+                          alert("搜尋失敗：" + err.message);
+                      }
+                  } finally {
+                      setIsSearching(false);
+                  }
               } 
           };
           
@@ -1120,7 +1185,7 @@
         
         const ExpenseView = ({ tripId, user }) => { const [members, setMembers] = useState(["我", "旅伴A"]); const [expenses, setExpenses, isLoaded] = usePersistentData('expenses', tripId, [], user, 'shared'); const [showAdd, setShowAdd] = useState(false); const [newMember, setNewMember] = useState(""); const [newExpense, setNewExpense] = useState({ item: "", cost: "", currency: "JPY", payer: "我", split: ["我", "旅伴A"] }); const [rates, setRates] = useState(CURRENCIES); useEffect(() => { fetch('https://api.exchangerate-api.com/v4/latest/TWD') .then(r=>r.json()) .then(d => { const newRates = { ...CURRENCIES }; if(d.rates.JPY) newRates.JPY.rate = 1 / d.rates.JPY; if(d.rates.USD) newRates.USD.rate = 1 / d.rates.USD; if(d.rates.KRW) newRates.KRW.rate = 1 / d.rates.KRW; if(d.rates.EUR) newRates.EUR.rate = 1 / d.rates.EUR; setRates(newRates); }) .catch(()=>{ console.log("Using default rates"); }); }, []); const addExpense = () => { if (!newExpense.item || !newExpense.cost) return; setExpenses(prev => { const safeExpenses = Array.isArray(prev) ? prev : []; return [...safeExpenses, { id: Date.now(), item: newExpense.item, cost: parseFloat(newExpense.cost), currency: newExpense.currency, payer: newExpense.payer, split: newExpense.split }]; }); setShowAdd(false); setNewExpense({ item: "", cost: "", currency: "JPY", payer: "我", split: ["我", "旅伴A"] }); }; const handleAddMember = () => { if (newMember && !members.includes(newMember)) { setMembers([...members, newMember]); setNewMember(""); } }; const handleRemoveMember = (m) => { if(m!=="我") setMembers(members.filter(mem=>mem!==m)); }; const toggleSplit = (m) => { const current = newExpense.split; setNewExpense({...newExpense, split: current.includes(m) ? current.filter(x=>x!==m) : [...current, m]}); }; const totalSpentTWD = useMemo(() => { if (!Array.isArray(expenses)) return 0; return expenses.reduce((sum, e) => { const amount = parseFloat(e.cost) || 0; const rate = rates[e.currency]?.rate || 1; return sum + (amount * rate); }, 0); }, [expenses, rates]); return ( <div className="p-4 pb-24"> <div className="bg-[#2b4f60] p-5 rounded-2xl text-white shadow-lg mb-6"><div className="flex justify-between items-start"><div><div className="text-xs opacity-70">總支出 (預估台幣)</div><div className="text-3xl font-bold">NT$ {Math.round(totalSpentTWD).toLocaleString()}</div></div><div className="text-right bg-white/20 px-3 py-1.5 rounded-lg backdrop-blur-sm"><div className="text-[10px] opacity-80 mb-1">參考匯率</div><div className="font-mono text-xs space-y-0.5"><div>JPY ≈ {rates.JPY.rate.toFixed(3)}</div><div>USD ≈ {rates.USD.rate.toFixed(1)}</div></div></div></div><div className="flex gap-2 mt-4 overflow-x-auto pb-2 pt-2 scrollbar-hide">{members.map(m => (<div key={m} className="relative group flex-shrink-0"><div className="w-9 h-9 rounded-full bg-[#B74B4B] flex items-center justify-center text-xs border-2 border-white/20 shadow-sm font-bold">{m[0]}</div>{m!=="我" && <button onClick={()=>handleRemoveMember(m)} className="absolute -top-1 -right-1 bg-white text-red-500 rounded-full w-4 h-4 flex items-center justify-center shadow-sm z-10"><X size={10}/></button>}</div>))}<div className="flex items-center bg-white/20 rounded-full px-3 py-1 ml-1"><input className="bg-transparent w-16 text-xs text-white placeholder-white/50 focus:outline-none" placeholder="加旅伴" value={newMember} onChange={e=>setNewMember(e.target.value)}/><button onClick={handleAddMember} className="hover:bg-white/20 rounded-full p-1"><Plus size={14}/></button></div></div></div> <div className="bg-white p-4 rounded-xl border border-stone-100 mb-4 shadow-sm"><h3 className="font-bold mb-3 flex items-center gap-2 text-stone-700"><Calculator size={16} className="text-[#2b4f60]"/> 最近消費</h3><div className="space-y-3">{Array.isArray(expenses) && expenses.length > 0 ? ( expenses.map(ex => { const currency = rates[ex.currency] || rates.TWD; return ( <div key={ex.id} className="flex justify-between items-center p-2 hover:bg-stone-50 rounded-lg transition-colors"><div className="flex items-center gap-3"><div className="w-8 h-8 rounded-full bg-stone-100 flex items-center justify-center text-stone-400"><ShoppingBag size={14}/></div><div><div className="text-sm font-bold text-stone-700">{ex.item}</div><div className="text-[10px] text-stone-400 flex gap-1"><span className="bg-stone-100 px-1 rounded">{ex.payer} 先付</span>{ex.split.length > 0 && <span>• 分給 {ex.split.length} 人</span>}</div></div></div><div className="flex items-center gap-3"><div className="text-right"><div className="font-bold font-mono text-stone-700">{currency.symbol} {ex.cost.toLocaleString()}</div>{ex.currency !== 'TWD' && (<div className="text-[10px] text-stone-400">≈ NT$ {Math.round(ex.cost * currency.rate).toLocaleString()}</div>)}</div><button onClick={()=>setExpenses(prev => prev.filter(e=>e.id!==ex.id))} className="text-stone-300 hover:text-red-500 transition-colors"><Trash2 size={14}/></button></div></div> ); }) ) : ( <div className="text-center text-stone-400 text-xs py-4">尚無消費紀錄</div> )}</div></div> <button onClick={()=>setShowAdd(true)} className="fixed bottom-24 right-4 bg-[#B74B4B] text-white p-4 rounded-full shadow-xl hover:bg-[#a03e3e] transition-colors z-30"><Plus size={24}/></button> {showAdd && <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[2000]"><div className="bg-white p-6 rounded-2xl w-full max-w-sm shadow-2xl animate-fade-in"><h3 className="font-bold text-lg mb-4 text-stone-800 flex items-center gap-2"><Wallet size={20} className="text-[#B74B4B]"/> 新增消費</h3><div className="space-y-4"><input className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#2b4f60]/20 font-bold" placeholder="消費項目 (例如: 晚餐)" value={newExpense.item} onChange={e=>setNewExpense({...newExpense, item: e.target.value})}/><div className="flex gap-2"><div className="relative w-1/3"><select className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl appearance-none focus:outline-none font-mono text-sm font-bold pl-8" value={newExpense.currency} onChange={e=>setNewExpense({...newExpense, currency: e.target.value})}>{Object.values(CURRENCIES).map(c => (<option key={c.id} value={c.id}>{c.id}</option>))}</select><div className="absolute left-3 top-3.5 pointer-events-none text-stone-500 text-xs">{CURRENCIES[newExpense.currency].flag}</div><ChevronDown size={14} className="absolute right-2 top-4 text-stone-400 pointer-events-none"/></div><div className="relative flex-1"><span className="absolute left-3 top-3 text-stone-400 font-mono font-bold">{CURRENCIES[newExpense.currency].symbol}</span><input type="number" className="w-full p-3 pl-8 bg-stone-50 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#2b4f60]/20 font-mono font-bold" placeholder="0" value={newExpense.cost} onChange={e=>setNewExpense({...newExpense, cost: e.target.value})}/></div></div><div><label className="text-xs font-bold text-stone-400 mb-2 block ml-1">誰先付錢?</label><div className="flex gap-2 flex-wrap">{members.map(m=><button key={m} onClick={()=>setNewExpense({...newExpense, payer:m})} className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ${newExpense.payer===m ? 'bg-[#2b4f60] text-white border-[#2b4f60] shadow-md' : 'bg-white text-stone-500 border-stone-200 hover:bg-stone-50'}`}>{m}</button>)}</div></div><div><label className="text-xs font-bold text-stone-400 mb-2 block ml-1">分攤給誰?</label><div className="flex gap-2 flex-wrap">{members.map(m=><button key={m} onClick={()=>toggleSplit(m)} className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all border flex items-center gap-1 ${newExpense.split.includes(m) ? 'bg-green-100 text-green-700 border-green-200' : 'bg-white text-stone-400 border-stone-100'}`}>{newExpense.split.includes(m) && <Check size={10}/>} {m}</button>)}</div></div><div className="flex gap-3 pt-2"><button onClick={()=>setShowAdd(false)} className="flex-1 py-3 border border-stone-200 rounded-xl text-stone-500 font-bold hover:bg-stone-50">取消</button><button onClick={addExpense} className="flex-1 py-3 bg-[#2b4f60] text-white rounded-xl font-bold shadow-lg hover:bg-[#1e3a8a] transition-colors">儲存消費</button></div></div></div></div>} </div> ); };
         
-        const PackingView = ({ tripId, user }) => { const [items, setItems, isLoaded] = usePersistentData('packing', tripId, DEFAULT_PACKING_LIST, user, 'shared'); const safeItems = Array.isArray(items) ? items : []; const [newItemText, setNewItemText] = useState(""); const [isEditing, setIsEditing] = useState(false); const toggleCheck = (id) => setItems(prev => (Array.isArray(prev)?prev:[]).map(i => i.id === id ? { ...i, checked: !i.checked } : i)); const addNewItem = () => { if (newItemText.trim()) { setItems(prev => [...(Array.isArray(prev)?prev:[]), { id: Date.now(), text: newItemText, checked: false, category: "自訂" }]); setNewItemText(""); } }; const deleteItem = (id) => setItems(prev => (Array.isArray(prev)?prev:[]).filter(i => i.id !== id)); const progress = Math.round((safeItems.filter(i => i.checked).length / Math.max(safeItems.length, 1)) * 100) || 0; return ( <div className="p-4 pb-24"> <div className="bg-[#FDFCF8] p-5 rounded-xl shadow-sm border border-stone-200 mb-4"><div className="flex justify-between items-end mb-3"><span className="text-stone-500 text-xs font-bold tracking-wider">打包進度</span><span className="text-3xl font-bold text-[#2b4f60] font-serif">{progress}%</span></div><div className="h-1.5 bg-stone-100 rounded-full overflow-hidden"><div className="h-full bg-[#2b4f60] transition-all duration-500 ease-out" style={{ width: `${progress}%` }}></div></div></div> <div className="flex gap-2 mb-6"><input className="flex-1 px-4 py-3 rounded bg-[#FDFCF8] border text-sm" placeholder="新增物品..." value={newItemText} onChange={(e) => setNewItemText(e.target.value)} /><button onClick={addNewItem} className="bg-[#2b4f60] text-white w-12 rounded flex items-center justify-center shadow-sm"><Plus size={20} /></button><button onClick={() => setIsEditing(!isEditing)} className={`w-12 rounded flex items-center justify-center shadow-sm border ${isEditing ? 'bg-red-100 text-red-500' : 'bg-white text-stone-500'}`}><Trash2 size={20} /></button></div> <div className="space-y-2">{safeItems.map(item => (<div key={item.id} onClick={() => !isEditing && toggleCheck(item.id)} className={`flex items-center p-3 rounded-xl border transition-all ${item.checked ? 'bg-stone-50 opacity-60' : 'bg-white'}`}>{isEditing ? (<button onClick={() => deleteItem(item.id)} className="mr-3 text-red-500"><X size={16}/></button>) : (<div className={`w-5 h-5 rounded border mr-3 flex items-center justify-center ${item.checked ? 'bg-[#7d8f68] border-transparent' : ''}`}>{item.checked && <Check size={12} className="text-white"/>}</div>)}<span className={`text-sm flex-1 ${item.checked ? 'line-through text-stone-400' : ''}`}>{item.text}</span></div>))}</div> </div> ); };
+        const PackingView = ({ tripId, user }) => { const [items, setItems, isLoaded] = usePersistentData('packing', tripId, DEFAULT_PACKING_LIST, user, 'shared'); const safeItems = Array.isArray(items) ? items : []; const [newItemText, setNewItemText] = useState(""); const [isEditing, setIsEditing] = useState(false); const toggleCheck = (id) => setItems(prev => (Array.isArray(prev)?prev:[]).map(i => i.id === id ? { ...i, checked: !i.checked } : i)); const addNewItem = () => { if (newItemText.trim()) { setItems(prev => [...(Array.isArray(prev)?prev:[]), { id: Date.now(), text: newItemText, checked: false, category: "自訂" }]); setNewItemText(""); } }; const deleteItem = (id) => setItems(prev => (Array.isArray(prev)?prev:[]).filter(i => i.id !== id)); const progress = Math.round((safeItems.filter(i => i.checked).length / Math.max(safeItems.length, 1)) * 100) || 0; return ( <div className="p-4 pb-24"> <div className="bg-[#FDFCF8] p-5 rounded-xl shadow-sm border border-stone-200 mb-4"><div className="flex justify-between items-end mb-3"><span className="text-stone-500 text-xs font-bold tracking-wider">打包進度</span><span className="text-3xl font-bold text-[#2b4f60] font-serif">{progress}%</span></div><div className="h-1.5 bg-stone-100 rounded-full overflow-hidden"><div className="h-full bg-[#2b4f60] transition-all duration-500 ease-out" style={{ width: `${progress}%` }}></div></div></div> <div className="flex gap-2 mb-6"><input className="flex-1 px-4 py-3 rounded bg-[#FDFCF8] border text-sm" placeholder="新增物品..." value={newItemText} onChange={(e) => setNewItemText(e.target.value)} /><button onClick={addNewItem} className="bg-[#2b4f60] text-white w-12 rounded flex items-center justify-center shadow-sm"><Plus size={20} /></button><button onClick={() => !isEditing && setIsEditing(!isEditing)} className={`w-12 rounded flex items-center justify-center shadow-sm border ${isEditing ? 'bg-red-100 text-red-500' : 'bg-white text-stone-500'}`}><Trash2 size={20} /></button></div> <div className="space-y-2">{safeItems.map(item => (<div key={item.id} onClick={() => !isEditing && toggleCheck(item.id)} className={`flex items-center p-3 rounded-xl border transition-all ${item.checked ? 'bg-stone-50 opacity-60' : 'bg-white'}`}>{isEditing ? (<button onClick={() => deleteItem(item.id)} className="mr-3 text-red-500"><X size={16}/></button>) : (<div className={`w-5 h-5 rounded border mr-3 flex items-center justify-center ${item.checked ? 'bg-[#7d8f68] border-transparent' : ''}`}>{item.checked && <Check size={12} className="text-white"/>}</div>)}<span className={`text-sm flex-1 ${item.checked ? 'line-through text-stone-400' : ''}`}>{item.text}</span></div>))}</div> </div> ); };
         
         const InfoView = ({ tripId, user }) => { 
             const [infos, setInfos, isLoaded] = usePersistentData('infos', tripId, DEFAULT_INFO_LIST, user, 'shared'); 
@@ -1289,33 +1354,28 @@
               return 'saved';
           }, [tripsSyncStatus, itinSyncStatus, currentTripId]);
 
-          useEffect(() => {
-              const fullUrl = window.location.href;
-              if (fullUrl.includes('share=')) {
-                  try {
-                      const url = new URL(fullUrl);
-                      let shareId = url.searchParams.get('share');
-                      let isRo = url.searchParams.get('ro') === '1';
-
-                      if (shareId && url.hash) {
-                          let hashStr = url.hash;
-                          if (hashStr.includes('&ro=1')) {
-                              isRo = true;
-                              hashStr = hashStr.replace('&ro=1', '');
-                          }
-                          shareId += hashStr;
-                      }
-
-                      if (shareId) {
-                          handleJoinTrip(shareId, isRo);
-                      }
-                  } catch(e) {}
-              }
+          useEffect(() => { 
+              const fullUrl = window.location.href; 
+              if (fullUrl.includes('share=')) { 
+                  try { 
+                      const url = new URL(fullUrl); 
+                      let shareId = url.searchParams.get('share'); 
+                      let isRo = url.searchParams.get('ro') === '1'; 
+                      if (shareId && url.hash) { 
+                          let hashStr = url.hash; 
+                          if (hashStr.includes('&ro=1')) { 
+                              isRo = true; 
+                              hashStr = hashStr.replace('&ro=1', ''); 
+                          } 
+                          shareId += hashStr; 
+                      } 
+                      if (shareId) { handleJoinTrip(shareId, isRo); } 
+                  } catch(e) {} 
+              } 
           }, [user]);
 
           useEffect(() => { const loader = document.getElementById('loader'); if (loader) { setTimeout(() => { loader.style.opacity = '0'; setTimeout(() => { loader.remove(); }, 500); }, 500); } }, []);
           useEffect(() => { const initAuth = async () => { if (!auth) return; onAuthStateChanged(auth, (u) => { if (u) { setUser(u); } else { signInAnonymously(auth).catch((e) => { console.log("Firebase Anonymously Error", e); }); } }); }; initAuth(); }, []);
-          
           useEffect(() => { if(currentTripId) setActiveDay(1); }, [currentTripId]);
 
           const getActiveRouteKey = (day, currentRouteState) => { if (!day.hasRoutes) return null; const keys = Object.keys(day.routes); return (currentRouteState && day.routes[currentRouteState]) ? currentRouteState : keys[0]; };
@@ -1344,54 +1404,17 @@
           const handleJoinTrip = async (codeOrUrl, isViewOnly = false) => {
               let code = codeOrUrl.trim();
               let finalIsReadOnly = isViewOnly;
-
-              if (code.startsWith('http')) {
-                  try {
-                      const url = new URL(code);
-                      code = url.searchParams.get('share');
-                      if (url.searchParams.get('ro') === '1') finalIsReadOnly = true;
-                      if (code && url.hash) {
-                          let hashStr = url.hash;
-                          if (hashStr.includes('&ro=1')) {
-                              finalIsReadOnly = true;
-                              hashStr = hashStr.replace('&ro=1', '');
-                          }
-                          code += hashStr;
-                      }
-                  } catch(e) { }
-              }
-              
+              if (code.startsWith('http')) { try { const url = new URL(code); code = url.searchParams.get('share'); if (url.searchParams.get('ro') === '1') finalIsReadOnly = true; if (code && url.hash) { let hashStr = url.hash; if (hashStr.includes('&ro=1')) { finalIsReadOnly = true; hashStr = hashStr.replace('&ro=1', ''); } code += hashStr; } } catch(e) { } }
               if (!code) return;
-              
-              const safeTrips = Array.isArray(trips) ? trips : [];
-              const exists = safeTrips.find(t => t.id === code);
-              
+              const safeTrips = Array.isArray(trips) ? trips : []; const exists = safeTrips.find(t => t.id === code);
               if (!exists) {
                   let newTrip = { id: code, title: "分享行程 (同步中...)", date: "未設定", emoji: "🔗", cover: THEME_COLORS[0].value, isReadOnly: finalIsReadOnly };
-                  if (db) {
-                      try {
-                          const docRef = doc(db, 'artifacts', appId, 'itineraries', code);
-                          const docSnap = await getDoc(docRef);
-                          const isExist = typeof docSnap.exists === 'function' ? docSnap.exists() : docSnap.exists;
-                          if (isExist && docSnap.data().meta) {
-                              newTrip = { id: code, ...docSnap.data().meta, isReadOnly: finalIsReadOnly };
-                          }
-                      } catch(e) { console.error("Fetch meta error:", e); }
-                  }
-                  
-                  setTrips(prev => {
-                      const safe = Array.isArray(prev) ? prev : [];
-                      if(safe.find(t => t.id === code)) return safe;
-                      return [...safe, newTrip];
-                  });
+                  if (db) { try { const docRef = doc(db, 'artifacts', appId, 'itineraries', code); const docSnap = await getDoc(docRef); const isExist = typeof docSnap.exists === 'function' ? docSnap.exists() : docSnap.exists; if (isExist && docSnap.data().meta) { newTrip = { id: code, ...docSnap.data().meta, isReadOnly: finalIsReadOnly }; } } catch(e) { console.error("Fetch meta error:", e); } }
+                  setTrips(prev => { const safe = Array.isArray(prev) ? prev : []; if(safe.find(t => t.id === code)) return safe; return [...safe, newTrip]; });
               } else if (exists.isReadOnly !== finalIsReadOnly) {
                   setTrips(prev => (Array.isArray(prev) ? prev : []).map(t => t.id === code ? { ...t, isReadOnly: finalIsReadOnly } : t));
               }
-              
-              setCurrentTripId(code);
-              setIsReadOnly(finalIsReadOnly);
-              setActiveDay(1);
-              
+              setCurrentTripId(code); setIsReadOnly(finalIsReadOnly); setActiveDay(1);
               window.history.replaceState({}, document.title, window.location.pathname);
           };
 
@@ -1403,98 +1426,41 @@
                   if (d.day === activeDay) {
                       if (d.hasRoutes) {
                           const currentKey = getActiveRouteKey(d, route);
-                          return {
-                              ...d,
-                              date: editDayData.date,
-                              routes: {
-                                  ...d.routes,
-                                  [currentKey]: {
-                                      ...d.routes[currentKey],
-                                      title: editDayData.title,
-                                      city: editDayData.city
-                                  }
-                              }
-                          };
+                          return { ...d, date: editDayData.date, routes: { ...d.routes, [currentKey]: { ...d.routes[currentKey], title: editDayData.title, city: editDayData.city } } };
                       }
                       return { ...d, ...editDayData }; 
                   }
                   return d;
               });
-              updateCurrentItinerary(newItinerary); 
-              setIsEditingDay(false); 
+              updateCurrentItinerary(newItinerary); setIsEditingDay(false); 
           };
           
           const handleMoveDay = (dayNum, direction) => {
-              if (isReadOnly) return;
-              const safeItin = Array.isArray(itinerary) ? itinerary : [];
-              const currentIndex = safeItin.findIndex(d => d.day === dayNum);
-              if (currentIndex === -1) return;
-              
-              const newIndex = currentIndex + direction;
-              if (newIndex < 0 || newIndex >= safeItin.length) return;
-              
-              const newItinerary = [...safeItin];
-              [newItinerary[currentIndex], newItinerary[newIndex]] = [newItinerary[newIndex], newItinerary[currentIndex]];
-              
-              const reIndexedItinerary = newItinerary.map((d, idx) => ({
-                  ...d,
-                  day: idx + 1,
-                  date: d.date 
-              }));
-
-              updateCurrentItinerary(reIndexedItinerary);
-              setActiveDay(newIndex + 1); 
+              if (isReadOnly) return; const safeItin = Array.isArray(itinerary) ? itinerary : []; const currentIndex = safeItin.findIndex(d => d.day === dayNum); if (currentIndex === -1) return;
+              const newIndex = currentIndex + direction; if (newIndex < 0 || newIndex >= safeItin.length) return;
+              const newItinerary = [...safeItin]; [newItinerary[currentIndex], newItinerary[newIndex]] = [newItinerary[newIndex], newItinerary[currentIndex]];
+              const reIndexedItinerary = newItinerary.map((d, idx) => ({ ...d, day: idx + 1, date: d.date }));
+              updateCurrentItinerary(reIndexedItinerary); setActiveDay(newIndex + 1); 
           };
 
           const handleEnableBranches = () => { 
               if(isReadOnly) return; 
               const newItinerary = (Array.isArray(itinerary) ? itinerary : []).map(d => { 
                   if (d.day !== activeDay) return d; 
-                  return { 
-                      ...d, 
-                      hasRoutes: true, 
-                      routes: { 
-                          A: { 
-                              name: "主要路線", 
-                              title: d.title,
-                              city: d.city,
-                              icon: 'map', 
-                              timeline: [...(d.timeline||[])] 
-                          } 
-                      }, 
-                      timeline: [] 
-                  }; 
+                  return { ...d, hasRoutes: true, routes: { A: { name: "主要路線", title: d.title, city: d.city, icon: 'map', timeline: [...(d.timeline||[])] } }, timeline: [] }; 
               }); 
-              updateCurrentItinerary(newItinerary); 
-              setRoute('A'); 
+              updateCurrentItinerary(newItinerary); setRoute('A'); 
           };
 
           const handleAddRoute = () => { 
               if(isReadOnly) return; 
-              const safeItin = Array.isArray(itinerary) ? itinerary : []; 
-              const day = safeItin.find(d => d.day === activeDay); 
-              if (!day) return; 
-              const existingKeys = Object.keys(day.routes || {}); 
-              const newKey = String.fromCharCode(65 + existingKeys.length); 
-              const currentKey = getActiveRouteKey(day, route);
+              const safeItin = Array.isArray(itinerary) ? itinerary : []; const day = safeItin.find(d => d.day === activeDay); if (!day) return; 
+              const existingKeys = Object.keys(day.routes || {}); const newKey = String.fromCharCode(65 + existingKeys.length); const currentKey = getActiveRouteKey(day, route);
               const newItinerary = safeItin.map(d => { 
                   if (d.day !== activeDay) return d; 
-                  return { 
-                      ...d, 
-                      routes: { 
-                          ...d.routes, 
-                          [newKey]: { 
-                              name: `新路線 ${newKey}`, 
-                              title: d.routes[currentKey]?.title || d.title,
-                              city: d.routes[currentKey]?.city || d.city,
-                              icon: 'map', 
-                              timeline: [] 
-                          } 
-                      } 
-                  }; 
+                  return { ...d, routes: { ...d.routes, [newKey]: { name: `新路線 ${newKey}`, title: d.routes[currentKey]?.title || d.title, city: d.routes[currentKey]?.city || d.city, icon: 'map', timeline: [] } } }; 
               }); 
-              updateCurrentItinerary(newItinerary); 
-              setRoute(newKey); 
+              updateCurrentItinerary(newItinerary); setRoute(newKey); 
           };
 
           const handleUpdateDayDate = (dayNum, newDate) => { if(isReadOnly) return; const newItinerary = (Array.isArray(itinerary) ? itinerary : []).map(d => d.day === dayNum ? { ...d, date: newDate } : d); updateCurrentItinerary(newItinerary); };
@@ -1505,15 +1471,8 @@
               const base = itinerary.find(d => d.day === activeDay); 
               if (!base) return itinerary[0]; 
               if (base.hasRoutes) { 
-                  const routeKeys = Object.keys(base.routes); 
-                  const currentRouteKey = (route && base.routes[route]) ? route : routeKeys[0]; 
-                  const selectedRoute = base.routes[currentRouteKey] || { name: "Loading", timeline: [] }; 
-                  return { 
-                      ...base, 
-                      title: selectedRoute.title || base.title, 
-                      city: selectedRoute.city || base.city,
-                      timeline: selectedRoute.timeline 
-                  }; 
+                  const routeKeys = Object.keys(base.routes); const currentRouteKey = (route && base.routes[route]) ? route : routeKeys[0]; const selectedRoute = base.routes[currentRouteKey] || { name: "Loading", timeline: [] }; 
+                  return { ...base, title: selectedRoute.title || base.title, city: selectedRoute.city || base.city, timeline: selectedRoute.timeline }; 
               } 
               return base; 
           }, [activeDay, route, itinerary]);
@@ -1526,52 +1485,22 @@
           const handleDeleteRoute = (key) => { if(isReadOnly) return; setConfirmDialog({ isOpen: true, id: key, type: 'route' }); };
           const handleUpdateEvent = (id, newData) => { if(isReadOnly) return; const newItinerary = (Array.isArray(itinerary) ? itinerary : []).map(day => { if (day.day !== activeDay) return day; if (day.hasRoutes) { const currentKey = getActiveRouteKey(day, route); const newTimeline = (day.routes[currentKey].timeline || []).map(t => t.id === id ? { ...t, ...newData } : t); return { ...day, routes: { ...day.routes, [currentKey]: { ...day.routes[currentKey], timeline: newTimeline } } }; } return { ...day, timeline: (day.timeline || []).map(t => t.id === id ? { ...t, ...newData } : t) }; }); updateCurrentItinerary(newItinerary); };
           const handleMarkerDrag = (id, lat, lng) => { if(isReadOnly) return; const itemToUpdate = currentData.timeline.find(t => t.id === id); if (itemToUpdate) { handleUpdateEvent(id, { lat, lng }); } };
+          
           const fetchCoordinates = async (query) => { try { const coords = await smartGeocode(query); return coords; } catch(e) { if (e.message === "QUOTA_EXCEEDED") setApiQuotaFull(true); return null; } };
           const handleMoveItem = (itemId, direction) => { if(isReadOnly) return; const newItinerary = (Array.isArray(itinerary) ? itinerary : []).map(d => { if (d.day !== activeDay) return d; const swap = (list) => { const idx = list.findIndex(t => t.id === itemId); if (idx === -1) return list; const targetIdx = idx + direction; if (targetIdx < 0 || targetIdx >= list.length) return list; const newList = [...list]; const temp = newList[idx]; newList[idx] = newList[targetIdx]; newList[targetIdx] = temp; return newList; }; if (d.hasRoutes) { const currentKey = getActiveRouteKey(d, route); return { ...d, routes: { ...d.routes, [currentKey]: { ...d.routes[currentKey], timeline: swap(d.routes[currentKey].timeline || []) } } }; } return { ...d, timeline: swap(d.timeline || []) }; }); updateCurrentItinerary(newItinerary); };
           const confirmDelete = (id) => { if(isReadOnly) return; setConfirmDialog({ isOpen: true, id, type: 'item' }); };
           const executeDelete = () => { if(isReadOnly) return; const id = confirmDialog.id; if (!id) return; const newItinerary = (Array.isArray(itinerary) ? itinerary : []).map(day => { if (day.day !== activeDay) return day; if (confirmDialog.type === 'route') { const newRoutes = { ...day.routes }; delete newRoutes[id]; return { ...day, hasRoutes: Object.keys(newRoutes).length > 0, routes: newRoutes }; } if (day.hasRoutes) { const keys = Object.keys(day.routes); const newRoutes = {}; keys.forEach(k => { newRoutes[k] = { ...day.routes[k], timeline: (day.routes[k].timeline || []).filter(t => t.id !== id) }; }); return { ...day, routes: newRoutes }; } return { ...day, timeline: (day.timeline || []).filter(t => t.id !== id) }; }); updateCurrentItinerary(newItinerary); if (confirmDialog.type === 'route' && route === id) { setRoute(null); } setConfirmDialog({ isOpen: false, id: null, type: 'item' }); };
           
           const executeCopy = (targetDayNum, targetRouteKey) => {
-              const itemToCopy = copyDialog.item;
-              if (!itemToCopy) return;
-
-              const newItem = {
-                  ...itemToCopy,
-                  id: `copied-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`, 
-                  title: `${itemToCopy.title} (複製)` 
-              };
-
+              const itemToCopy = copyDialog.item; if (!itemToCopy) return;
+              const newItem = { ...itemToCopy, id: `copied-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`, title: `${itemToCopy.title} (複製)` };
               const newItinerary = (Array.isArray(itinerary) ? itinerary : []).map(d => {
                   if (d.day !== targetDayNum) return d;
-                  
-                  if (d.hasRoutes && targetRouteKey) {
-                      return {
-                          ...d,
-                          routes: {
-                              ...d.routes,
-                              [targetRouteKey]: {
-                                  ...d.routes[targetRouteKey],
-                                  timeline: [...(d.routes[targetRouteKey].timeline || []), newItem]
-                              }
-                          }
-                      };
-                  }
-                  
-                  return {
-                      ...d,
-                      timeline: [...(d.timeline || []), newItem]
-                  };
+                  if (d.hasRoutes && targetRouteKey) { return { ...d, routes: { ...d.routes, [targetRouteKey]: { ...d.routes[targetRouteKey], timeline: [...(d.routes[targetRouteKey].timeline || []), newItem] } } }; }
+                  return { ...d, timeline: [...(d.timeline || []), newItem] };
               });
-
-              updateCurrentItinerary(newItinerary);
-              setCopyDialog({ isOpen: false, item: null });
-              
-              if (targetDayNum === activeDay) {
-                 setTimeout(() => {
-                      const el = document.getElementById(newItem.id);
-                      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                 }, 300);
-              }
+              updateCurrentItinerary(newItinerary); setCopyDialog({ isOpen: false, item: null });
+              if (targetDayNum === activeDay) { setTimeout(() => { const el = document.getElementById(newItem.id); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 300); }
           };
 
           const safeTrips = Array.isArray(trips) ? trips : [];
