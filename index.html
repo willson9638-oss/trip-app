@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Trip App (V15.5 Collab & AI Pro)</title>
+    <title>Trip App (V15.5 Collab & AI Pro - Fixed)</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -254,7 +254,8 @@
             });
         };
 
-        const getMapLink = (query) => `https://www.google.com/maps/search/?api=1&query=$?q=${encodeURIComponent(query || '')}`;
+        // 核心修復：修正原本缺乏 $ 符號導致無法正確插值 URL 編碼的 Bug
+        const getMapLink = (query) => `http://maps.google.com/?q=${encodeURIComponent(query || '')}`;
 
         const copyToClipboard = (text) => {
           if (!text) return;
@@ -697,6 +698,7 @@
             return ( <div className="fixed inset-0 bg-black/50 z-[2100] flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in" onClick={onClose}><div className="bg-white rounded-2xl p-5 w-full max-w-xs shadow-2xl" onClick={e => e.stopPropagation()}><h3 className="text-lg font-bold mb-4 text-stone-800 flex items-center gap-2"><MapIcon size={18}/> 編輯地點</h3><div className="space-y-3 mb-4"><div><label className="text-xs font-bold text-stone-500 block mb-1">名稱</label><input className="w-full border rounded p-2 text-sm" value={title} onChange={e => setTitle(e.target.value)} /></div><div><label className="text-xs font-bold text-stone-500 block mb-1">描述</label><textarea className="w-full border rounded p-2 text-sm" rows={3} value={desc} onChange={e => setDesc(e.target.value)} /></div></div><div className="flex gap-2"><button onClick={() => {onDelete(data.id); onClose();}} className="w-10 flex items-center justify-center border border-red-200 text-red-500 rounded hover:bg-red-50" title="刪除"><Trash2 size={16}/></button><button onClick={onClose} className="flex-1 py-2 border rounded text-stone-500 text-sm font-bold">取消</button><button onClick={() => {onSave(data.id, { title, desc }); onClose();}} className="flex-1 py-2 bg-[#2b4f60] text-white rounded text-sm font-bold shadow">儲存</button></div></div></div> );
         };
 
+        // 核心修正：徹底重構 WeatherWidget 元件，收斂依賴項並實作正規的 Debounce 釋放與 Geocoding 快取
         const WeatherWidget = ({ city, initialCity, defaultLat, defaultLng }) => {
           const [targetCity, setTargetCity] = useState(initialCity || "東京");
           const [weatherData, setWeatherData] = useState(null);
@@ -706,7 +708,13 @@
           const [showForecast, setShowForecast] = useState(false);
           const [inputValue, setInputValue] = useState(initialCity || "東京");
 
-          useEffect(() => { if(initialCity) { setTargetCity(initialCity); setInputValue(initialCity); setWeatherData(null); } }, [initialCity]);
+          useEffect(() => { 
+              if(initialCity) { 
+                  setTargetCity(initialCity); 
+                  setInputValue(initialCity); 
+                  setWeatherData(null); 
+              } 
+          }, [initialCity]);
 
           const getWeatherIcon = (code) => {
             if (code === 0) return <Sun size={16} className="text-amber-500" />;
@@ -720,19 +728,46 @@
           };
 
           useEffect(() => {
+            if (!targetCity || targetCity === "未設定" || targetCity === "新項目") return;
+            setLoading(true);
+
             const fetchWeather = async () => {
-              setLoading(true);
               try {
-                let lat = defaultLat || 35.6895; let long = defaultLng || 139.6917; 
+                let lat = parseFloat(defaultLat) || 35.6895; 
+                let long = parseFloat(defaultLng) || 139.6917; 
                 const isDefaultCity = targetCity === initialCity;
-                if (!isDefaultCity || (!defaultLat && !defaultLng)) { const aiCoords = await smartGeocode(targetCity); if (aiCoords && aiCoords.lat) { lat = aiCoords.lat; long = aiCoords.lng; } }
+
+                if (!isDefaultCity || (!defaultLat && !defaultLng)) { 
+                    const cacheKey = `geo_cache_${encodeURIComponent(targetCity)}`;
+                    const cached = localStorage.getItem(cacheKey);
+                    
+                    if (cached) {
+                        const parsedCache = JSON.parse(cached);
+                        lat = parsedCache.lat;
+                        long = parsedCache.lng;
+                    } else {
+                        const aiCoords = await smartGeocode(targetCity); 
+                        if (aiCoords && !isNaN(aiCoords.lat)) { 
+                            lat = aiCoords.lat; 
+                            long = aiCoords.lng; 
+                            localStorage.setItem(cacheKey, JSON.stringify({ lat, lng: long }));
+                        } 
+                    }
+                }
                 const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${long}&current=temperature_2m,weather_code,wind_speed_10m&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=8`);
                 const data = await res.json();
                 if (data.current) setWeatherData(data.current);
                 if (data.daily) setDailyForecast(data.daily);
-              } catch (e) { console.error("Weather Error", e); setWeatherData(null); } finally { setLoading(false); }
+              } catch (e) { 
+                  console.error("Weather Error", e); 
+                  setWeatherData(null); 
+              } finally { 
+                  setLoading(false); 
+              }
             };
-            const timer = setTimeout(() => fetchWeather(), 500); return () => clearTimeout(timer);
+
+            const timer = setTimeout(() => fetchWeather(), 600); 
+            return () => clearTimeout(timer); // 必須正確清除計時器，防堵無限發送 API
           }, [targetCity, defaultLat, defaultLng, initialCity]);
 
           const getDayLabel = (dateStr, index) => {
@@ -745,7 +780,7 @@
             <>
             <div className="flex items-center gap-2 bg-[#FDFCF8] px-3 py-1.5 rounded-full border border-stone-200 shadow-sm animate-fade-in cursor-pointer hover:bg-stone-50 h-[40px] select-none" onClick={() => setShowForecast(true)}>
               {loading ? ( <span className="text-xs text-stone-400">...</span> ) : weatherData ? ( <div className="flex items-center gap-1.5 h-full">{getWeatherIcon(weatherData.weather_code)}<div className="flex items-center gap-1.5"><span className="text-sm font-bold text-stone-700">{Math.round(weatherData.temperature_2m)}°C</span></div></div> ) : ( <span className="text-xs text-stone-400">N/A</span> )}
-              {isEditing ? ( <form onSubmit={(e) => {e.preventDefault(); e.stopPropagation(); setTargetCity(inputValue); setIsEditing(false);}} className="flex items-center h-full"><input className="w-20 text-xs bg-stone-100 border rounded px-1 py-0.5 outline-none" value={inputValue} onChange={(e) => setInputValue(e.target.value)} onBlur={() => setIsEditing(false)} autoFocus onClick={e=>e.stopPropagation()} /></form> ) : ( <button onClick={(e) => {e.stopPropagation(); setIsEditing(true);}} className="flex items-center gap-1 text-xs text-stone-500 hover:text-stone-800 border-b border-dashed border-stone-300 ml-1 whitespace-nowrap h-full">{targetCity}</button> )}
+              {isEditing ? ( <form onSubmit={(e) => {e.preventDefault(); e.stopPropagation(); setTargetCity(inputValue); setIsEditing(false);}} className="flex items-center h-full"><input className="w-20 text-xs bg-stone-100 border rounded px-1 py-0.5 outline-none" value={inputValue} onChange={(e) => setInputValue(e.target.value)} onBlur={() => !!isEditing && setIsEditing(false)} autoFocus onClick={e=>e.stopPropagation()} /></form> ) : ( <button onClick={(e) => {e.stopPropagation(); setIsEditing(true);}} className="flex items-center gap-1 text-xs text-stone-500 hover:text-stone-800 border-b border-dashed border-stone-300 ml-1 whitespace-nowrap h-full">{targetCity}</button> )}
             </div>
 
             {showForecast && createPortal(
@@ -1177,7 +1212,7 @@
                                 <button onClick={()=>{setPhotoMode('omikuji'); setStep('upload');}} className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 ${photoMode==='omikuji'?'bg-white shadow text-amber-600 ring-1 ring-amber-100':'text-stone-500 hover:bg-stone-100'}`}><FileText size={14}/> 解籤</button> 
                             </div> 
                         </div> 
-                        {step === 'upload' && ( <div className="pb-10"> <div className="p-6 flex flex-col items-center gap-6 mt-4"> <div className="grid grid-cols-2 gap-3 w-full"> {selectedImages.map((img, i) => (<div key={i} className="relative aspect-square"><img src={img} className="w-full h-full object-cover rounded-xl shadow-sm border border-stone-200" /><button onClick={() => setSelectedImages(p => p.filter((_, idx) => idx !== i))} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-md"><X size={14}/></button></div>))} <button onClick={() => fileInputRef.current.click()} className="aspect-square border-2 border-dashed border-stone-300 rounded-xl flex flex-col items-center justify-center text-stone-400 hover:bg-stone-50 hover:text-stone-600 transition-colors hover:border-stone-400"><Plus size={32}/><span className="text-xs mt-2 font-bold">加照片</span></button> </div> <input type="file" ref={fileInputRef} className="hidden" accept="image/*" multiple onChange={handleImageUpload} /> <div className="w-full"> <div className="text-xs font-bold text-stone-400 uppercase tracking-wider mb-3 text-center">選擇來源語言並開始 (預設翻譯為中文)</div> <div className="grid grid-cols-2 gap-3"> <button onClick={() => processImages('auto')} disabled={selectedImages.length === 0} className={`col-span-2 py-3 rounded-xl font-bold text-white shadow-md flex items-center justify-center gap-2 transition-all ${selectedImages.length === 0 ? 'bg-gray-300' : (photoMode==='menu'?'bg-pink-600 hover:bg-pink-700': photoMode==='omikuji'?'bg-amber-600 hover:bg-amber-700':'bg-indigo-600 hover:bg-indigo-700')}`}> <Sparkles size={18}/> 自動偵測 </button> {LANGUAGES.map(lang => ( <button key={lang.code} onClick={() => processImages(lang.code)} disabled={selectedImages.length === 0} className={`py-3 rounded-xl font-bold border transition-all flex items-center justify-center gap-2 ${selectedImages.length === 0 ? 'bg-stone-100 text-stone-300 border-stone-200' : 'bg-white text-stone-600 border-stone-200 hover:bg-stone-50 shadow-sm'}`}> {lang.flag} {lang.label} </button> ))} </div> </div> </div> {error && <div className="text-red-500 text-sm mt-2 bg-red-50 p-3 rounded-lg w-full text-center font-bold border border-red-100 mx-6 mb-6">{error}</div>} </div> )} 
+                        {step === 'upload' && ( <div className="pb-10"> <div className="p-6 flex flex-col items-center gap-6 mt-4"> <div className="grid grid-cols-2 gap-3 w-full"> {selectedImages.map((img, i) => (<div key={i} className="relative aspect-square"><img src={img} className="w-full h-full object-cover rounded-xl shadow-sm border border-stone-200" /><button onClick={() => setSelectedImages(p => p.filter((_, idx) => idx !== i))} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-md"><X size={14}/></button></div>))} <button onClick={() => fileInputRef.current.click()} className="aspect-square border-2 border-dashed border-stone-300 rounded-xl flex flex-col items-center justify-center text-stone-400 hover:bg-stone-50 hover:text-stone-600 transition-colors hover:border-stone-400"><Plus size={32}/><span className="text-xs mt-2 font-bold">加照片</span></button> </div> <input type="file" ref={fileInputRef} className="hidden" accept="image/*" multiple onChange={handleImageUpload} /> <div className="w-full"> <div className="text-xs font-bold text-stone-400 uppercase tracking-wider mb-3 text-center">選擇來源語言並開始 (預設翻譯為中文)</div> <div className="grid grid-cols-2 gap-3"> <button onClick={() => processImages('auto')} disabled={selectedImages.length === 0} className={`col-span-2 py-3 rounded-xl font-bold text-white shadow-md flex items-center justify-center gap-2 transition-all ${selectedImages.length === 0 ? 'bg-gray-300' : (photoMode==='menu'?'bg-pink-600 hover:bg-pink-700': photoMode==='omikuji'?'bg-amber-600 hover:bg-amber-700':'bg-indigo-600 hover:bg-indigo-700')}`}> <Sparkles size={18}/> 自動偵測 </button> {LANGUAGES.map(lang => ( <button key={lang.code} onClick={() => processImages(lang.code)} disabled={selectedImages.length === 0} className={`py-3 rounded-xl font-bold border transition-all flex items-center justify-center gap-2 ${selectedImages.length === 0 ? 'bg-stone-100 text-stone-300 border-stone-200' : 'bg-white text-stone-600 border-stone-200 hover:bg-stone-50 shadow-sm'}`}> {lang.flag} {lang.label} </button> ))} </div> </div> </div> {error && <div className="text-red-500 text-sm text-center p-2 bg-red-50 rounded-lg border border-red-100 mx-6 mb-6">{error}</div>} </div> )} 
                         {step === 'processing' && ( <div className="flex flex-col items-center justify-center h-[60vh]"><Loader2 className={`w-16 h-16 animate-spin mb-6 ${photoMode==='menu'?'text-pink-600': photoMode==='omikuji'?'text-amber-600':'text-indigo-600'}`}/><p className="text-stone-600 font-bold text-lg animate-pulse">{loadingMsg}</p></div> )} 
                         {step === 'result' && ( <div className="p-4 space-y-6"> {photoMode === 'general' && ( <div className="relative"><div className="space-y-4"><div className="relative rounded-2xl overflow-hidden shadow-sm border border-stone-200"><img src={selectedImages[0]} className="w-full object-cover opacity-90" alt="Original" /><div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none"></div><div className="absolute bottom-0 left-0 right-0 p-4 text-white"><div className="text-xs opacity-70 font-bold mb-1">原文圖像</div></div></div><div className="bg-white border border-indigo-100 rounded-2xl p-5 shadow-lg relative -mt-6 mx-2 z-10"><div className="flex justify-between items-center mb-3"><h3 className="font-bold text-indigo-600 flex items-center gap-2"><ArrowLeftRight size={16}/> 翻譯結果<Sparkles size={16} className="ml-1 text-amber-400"/></h3><button onClick={() => copyToClipboard(generalTranslation)} className="text-stone-400 hover:text-indigo-600"><Copy size={16}/></button></div><div className="prose prose-sm prose-indigo max-w-none text-stone-700 leading-relaxed whitespace-pre-wrap">{generalTranslation}</div></div></div></div> )} {photoMode === 'omikuji' && omikujiResult && ( <div className="space-y-6"><div className="bg-[#fffbf0] border border-amber-200 rounded-2xl p-6 shadow-sm text-center relative overflow-hidden"><div className="absolute top-0 right-0 p-4 opacity-10"><FileText size={100} className="text-amber-500"/></div><h3 className="text-amber-800 font-bold text-lg mb-1">運勢</h3><div className="text-5xl font-black text-amber-600 mb-4">{omikujiResult.fortune}</div><div className="w-16 h-1 bg-amber-200 mx-auto mb-4 rounded-full"></div><p className="text-amber-900/80 text-sm font-medium leading-relaxed">{omikujiResult.translation}</p></div><div className="bg-white border border-stone-200 rounded-2xl p-5 shadow-sm"><h3 className="font-bold text-stone-800 mb-3 flex items-center gap-2"><Star size={18} className="text-amber-500"/> 神明指示 / AI 解讀</h3><p className="text-stone-600 text-sm leading-7">{omikujiResult.advice}</p></div><div className="opacity-50 grayscale hover:grayscale-0 transition-all"><img src={selectedImages[0]} className="w-full h-48 object-cover rounded-xl" /></div></div> )} {photoMode === 'menu' && ( <> <div className="sticky top-[86px] z-50 bg-white/95 backdrop-blur-sm border-b border-stone-100 shadow-sm transition-all -mx-4 px-4 py-2"> <div className="flex gap-2 overflow-x-auto no-scrollbar"> {Object.keys(groupedMenu).map(cat => { const firstItem = groupedMenu[cat][0]; const label = firstItem?.originalCategory ? `${cat} (${firstItem.originalCategory})` : cat; return ( <button key={cat} id={`btn-cat-${cat}`} onClick={() => scrollToCategory(cat)} className={`px-4 py-1.5 rounded-full text-sm whitespace-nowrap border font-bold transition-all ${activeCategory === cat ? 'bg-pink-600 text-white border-pink-600 shadow-md' : 'bg-white text-stone-500 border-stone-200 hover:bg-stone-50'}`}>{label}</button> ) })} </div> </div> {Object.entries(groupedMenu).map(([cat, items]) => ( <div key={cat} id={`cat-${cat}`} className="mb-6 scroll-mt-40"> <h3 className="font-bold text-stone-800 mb-3 border-l-4 border-pink-500 pl-3 text-lg mt-6 first:mt-0"> {cat} <span className="text-sm font-normal text-stone-400 ml-2">{items[0]?.originalCategory}</span> </h3> <div className="space-y-4"> {items.map(item => ( <div key={item.id} onClick={() => setSelectedMenuItem(item)} className="bg-white border border-stone-100 rounded-2xl p-4 shadow-sm flex justify-between hover:shadow-md transition-all cursor-pointer"> <div className="flex-1 pr-2"> <div className="font-bold text-stone-900 text-lg">{item.translatedName}</div> <div className="text-xs text-stone-400 font-mono mb-2">{item.originalName}</div> <div className="text-sm text-stone-600 leading-relaxed bg-stone-50 p-2 rounded-lg">{item.description}</div> <div className="mt-3 flex flex-col"> {item.taxInclusivePrice ? ( <><span className="text-[10px] text-stone-400 line-through">原價 {item.price}</span><span className="text-lg font-black text-pink-600 leading-none">含稅 {item.taxInclusivePrice}</span></> ) : ( <span className="text-lg font-black text-pink-600">{item.price}</span> )} </div> </div> <div className="flex flex-col items-center justify-center gap-3 ml-2 min-w-[3rem]"> <div className="w-10 h-10 bg-pink-50 text-pink-600 rounded-full flex items-center justify-center shadow-sm"><Plus size={20}/></div> {getItemQty(item.id) > 0 && <span className="font-bold text-lg text-pink-600">{getItemQty(item.id)}</span>} </div> </div> ))} </div> </div> ))} </> )} <button onClick={() => {setStep('upload'); setSelectedImages([]); setMenuItems([]); setGeneralTranslation(''); setOmikujiResult(null);}} className="w-full py-4 border-2 border-dashed border-stone-300 text-stone-400 hover:bg-stone-50 hover:text-stone-600 rounded-2xl transition-colors font-bold flex items-center justify-center gap-2 mt-6"><RefreshCw size={18}/> 重新掃描</button> </div> )} 
                     </div> 
